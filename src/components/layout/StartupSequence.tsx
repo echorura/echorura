@@ -32,9 +32,9 @@ export default function StartupSequence() {
         setSharedSongId(songId);
       }
 
-      // Detect timezone and set default language if not already stored
-      const storedLang = localStorage.getItem('echo-language-storage');
-      if (!storedLang) {
+      // Detect timezone and set default language if not already detected
+      const detectedFlag = localStorage.getItem('echo-language-detected');
+      if (!detectedFlag) {
         try {
           const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
           let detected: 'zh' | 'en' | 'ja' = 'en';
@@ -56,6 +56,7 @@ export default function StartupSequence() {
             detected = 'zh';
           }
           useLanguageStore.getState().setLanguage(detected);
+          localStorage.setItem('echo-language-detected', 'true');
           console.log(`[Language Auto-Detect] Detected timezone: ${tz}. Setting language to: ${detected}`);
         } catch (err) {
           console.error('Timezone auto-detect error:', err);

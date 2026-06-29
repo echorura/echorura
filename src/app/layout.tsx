@@ -18,12 +18,12 @@ const geistMono = {
 };
 
 export const metadata: Metadata = {
-  title: "极声音乐 / 去中心化音乐分发平台",
-  description: "极声音乐 · Web3 驱动 of 去中心化音乐分发与 ECHO 积分生态",
+  title: "ECHORURA | Decentralized Music Ecosystem",
+  description: "ECHORURA - Web3-powered decentralized music distribution and attention economy.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "极声音乐",
+    title: "ECHORURA",
   },
 };
 
@@ -40,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body suppressHydrationWarning className="antialiased min-h-screen flex flex-col">
         <Web3Provider>
           {/* <SplashScreen /> */}

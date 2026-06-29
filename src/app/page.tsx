@@ -19,16 +19,16 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
         .single();
 
       if (playlist) {
-        const title = playlist.name || '极声歌单';
-        const creator = playlist.creator?.display_name || '极声用户';
+        const title = playlist.name || 'ECHORURA Playlist';
+        const creator = playlist.creator?.display_name || 'ECHORURA User';
         const cover = playlist.cover_url || 'https://www.echora.cn/logo.png';
-        const desc = `快来听听这个精选歌单！《${title}》- 由 @${creator} 精选创建，听歌共享收益。`;
+        const desc = `Listen to this curated playlist! "${title}" - selected and created by @${creator}. Listen & earn together.`;
 
         return {
-          title: `ECHORURA推荐歌单【${title}】 - @${creator}`,
+          title: `ECHORURA Recommended Playlist [${title}] - @${creator}`,
           description: desc,
           openGraph: {
-            title: `ECHORURA推荐歌单【${title}】 - @${creator}`,
+            title: `ECHORURA Recommended Playlist [${title}] - @${creator}`,
             description: desc,
             images: [
               {
@@ -49,17 +49,17 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   if (!songId) {
     return {
-      title: '极声音乐 / 去中心化音乐分发平台',
-      description: '极声音乐 · Web3 驱动 of 去中心化音乐分发与 ECHO 积分生态',
+      title: 'ECHORURA | Decentralized Music Ecosystem',
+      description: 'ECHORURA - Web3-powered decentralized music distribution and attention economy.',
       openGraph: {
-        title: '极声音乐 / 去中心化音乐分发平台',
-        description: '极声音乐 · Web3 驱动 of 去中心化音乐分发与 ECHO 积分生态',
+        title: 'ECHORURA | Decentralized Music Ecosystem',
+        description: 'ECHORURA - Web3-powered decentralized music distribution and attention economy.',
         images: [
           {
             url: 'https://www.echora.cn/logo.png',
             width: 300,
             height: 300,
-            alt: '极声音乐 ECHORURA',
+            alt: 'ECHORURA',
           },
         ],
       },
@@ -76,21 +76,21 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
     if (!song) {
       return {
-        title: '极声音乐 / 去中心化音乐分发平台',
-        description: '极声音乐 · Web3 驱动的去中心化音乐分发与 ECHO 积分生态',
+        title: 'ECHORURA | Decentralized Music Ecosystem',
+        description: 'ECHORURA - Web3-powered decentralized music distribution and attention economy.',
       };
     }
 
-    const title = song.title || '极声音轨';
-    const artist = song.artist || song.creator?.display_name || '极声创作者';
+    const title = song.title || 'ECHORURA Track';
+    const artist = song.artist || song.creator?.display_name || 'ECHORURA Creator';
     const cover = song.cover_url || song.cover || 'https://www.echora.cn/logo.png';
-    const desc = `快来听听这首歌！《${title}》- ${artist}，听歌还能获取 ECHO 挖矿奖励！认购音乐共创股权获取分成收益，点击立刻收听。`;
+    const desc = `Listen to this track: "${title}" by ${artist}. Listen to earn ECHO mining rewards! Co-own music equity & share royalty dividends. Click to listen.`;
 
     return {
-      title: `ECHORURA推荐【${title}】-${artist}`,
+      title: `ECHORURA Recommends [${title}] - ${artist}`,
       description: desc,
       openGraph: {
-        title: `ECHORURA推荐【${title}】-${artist}`,
+        title: `ECHORURA Recommends [${title}] - ${artist}`,
         description: desc,
         images: [
           {
@@ -106,8 +106,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   } catch (err) {
     console.error('Error generating song metadata:', err);
     return {
-      title: '极声音乐 / 去中心化音乐分发平台',
-      description: '极声音乐 · Web3 驱动的去中心化音乐分发与 ECHO 积分生态',
+      title: 'ECHORURA | Decentralized Music Ecosystem',
+      description: 'ECHORURA - Web3-powered decentralized music distribution and attention economy.',
     };
   }
 }
