@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/settle",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/arena-transition",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/arena-settle",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

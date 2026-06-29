@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ECHORURA - 去中心化音乐分发与版权价值共享平台 | WEB3 ROADSHOW</title>
+  
+  <!-- Modern Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;900&family=Outfit:wght@200;400;900&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* --- CSS RESET & PREMIUM VARIABLES --- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    :root {
+      --bg-color: #050508;
+      --accent-color: #ef4444;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-display: 'Outfit', 'Inter', sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-color);
+      color: #ffffff;
+      font-family: var(--font-sans);
+      overflow: hidden;
+    }
+
+    /* --- THEME COLORS PER CHAPTER --- */
+    .theme-red { --accent-color: #ef4444; --accent-glow: rgba(239, 68, 68, 0.25); }
+    .theme-blue { --accent-color: #3b82f6; --accent-glow: rgba(59, 130, 246, 0.25); }
+    .theme-green { --accent-color: #10b981; --accent-glow: rgba(16, 185, 129, 0.25); }
+    .theme-gold { --accent-color: #f59e0b; --accent-glow: rgba(245, 158, 11, 0.25); }
+
+    /* --- LAYOUT STRUCTURE --- */
+    .app-container {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    header, main, footer {
+      position: relative;
+      z-index: 20;
+      pointer-events: auto;
+    }
+
+    /* --- GLOWING BACKGROUND CANVAS --- */
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      object-fit: cover;
+    }
+
+    .ambient-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: radial-gradient(circle at 50% 50%, rgba(5, 5, 8, 0.1) 0%, #050508 100%);
+      pointer-events: none;
+    }
+
+    .color-dodge-glow {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0.35;
+      mix-blend-mode: color-dodge;
+      transition: background 1.2s ease;
+    }
+
+    /* --- HEADER STYLING --- */
+    header {
+      width: 100%;
+      padding: 24px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+
+    .brand-icon-box i {
+      color: #000000;
+      width: 18px;
+      height: 18px;
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-title span {
+      font-size: 9px;
+      font-style: normal;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f59e0b;
+      color: #000000;
+      font-weight: 900;
+    }
+
+    .brand-subtitle {
+      font-size: 8px;
+      color: #6b7280;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+
+    /* --- AUTO PROGRESS INDICATORS --- */
+    .progress-bar-container {
+      flex: 1;
+      max-width: 500px;
+      margin: 0 48px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background-color: var(--accent-color);
+      border-radius: 99px;
+      transition: width 0.1s linear, background-color 1s ease;
+    }
+
+    .progress-track.completed .progress-fill {
+      width: 100% !important;
+      opacity: 0.6;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .audio-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .audio-btn:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+    }
+
+    .audio-btn.active {
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+
+    .enter-platform-btn {
+      padding: 10px 20px;
+      border-radius: 99px;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+      text-decoration: none;
+    }
+
+    .enter-platform-btn:hover {
+      background: #f59e0b;
+      color: #000000;
+      border-color: #f59e0b;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+    }
+
+    /* --- MAIN SLIDES CONTENT --- */
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .slide {
+      display: none;
+      animation: slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .slide.active {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0px);
+      }
+    }
+
+    .chapter-tag {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--accent-color);
+      transition: border-color 1s ease, color 1s ease;
+    }
+
+    .slide-title-zh {
+      font-size: 40px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      margin-top: 24px;
+      font-style: italic;
+    }
+
+    .slide-title-en {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 200;
+      color: #9ca3af;
+      letter-spacing: 0.05em;
+      line-height: 1.3;
+      margin-top: 4px;
+    }
+
+    .slide-subtitle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .subtitle-indicator {
+      width: 4px;
+      height: 24px;
+      border-radius: 99px;
+      background-color: var(--accent-color);
+      transition: background-color 1s ease;
+    }
+
+    .subtitle-text {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fbbf24;
+      font-style: italic;
+    }
+
+    .subtitle-text span {
+      font-size: 12px;
+      font-weight: 300;
+      color: #6b7280;
+      font-style: normal;
+      margin-left: 8px;
+      font-family: var(--font-display);
+    }
+
+    .slide-description-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 48px;
+      margin-top: 24px;
+    }
+
+    .desc-zh {
+      font-size: 15px;
+      line-height: 1.8;
+      color: #d1d5db;
+      font-weight: 500;
+    }
+
+    .desc-en {
+      font-size: 12px;
+      line-height: 1.7;
+      color: #6b7280;
+      margin-top: 12px;
+      font-family: var(--font-display);
+    }
+
+    .feature-sidebox {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      align-self: center;
+    }
+
+    .feature-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-color);
+      background: rgba(255, 255, 255, 0.05);
+      transition: color 1s ease;
+    }
+
+    .feature-icon-box i {
+      width: 22px;
+      height: 22px;
+    }
+
+    .feature-title {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .feature-subtitle {
+      font-size: 9px;
+      color: #6b7280;
+      font-family: var(--font-display);
+      margin-top: 2px;
+    }
+
+    /* --- FOOTER INTERACTION PANEL --- */
+    footer {
+      width: 100%;
+      padding: 24px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      background: rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .controllers {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .control-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .control-btn:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .control-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .play-pause-btn {
+      width: 52px;
+      height: 52px;
+      background: #ffffff;
+      color: #000000;
+      border: none;
+      box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
+    }
+
+    .play-pause-btn:hover {
+      transform: scale(1.05);
+      background: #ffffff;
+    }
+
+    .play-pause-btn i {
+      width: 22px;
+      height: 22px;
+    }
+
+    .footer-ethos {
+      text-align: right;
+    }
+
+    .ethos-zh {
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    .ethos-en {
+      font-size: 8px;
+      font-family: var(--font-display);
+      letter-spacing: 0.15em;
+      color: rgba(255, 255, 255, 0.2);
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    /* --- AWAKENING GATE (BROWSER AUTOPLAY COMPLIANCE) --- */
+    .gate-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      background: #050508;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .gate-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.05);
+      filter: blur(30px);
+    }
+
+    .spinner-ring {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner-outer {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px dashed rgba(245, 158, 11, 0.2);
+      animation: spin 20s linear infinite;
+    }
+
+    .spinner-glow {
+      position: absolute;
+      width: 80%;
+      height: 80%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, rgba(139, 92, 246, 0.15) 50%, transparent 70%);
+      filter: blur(40px);
+      animation: pulse 3s infinite ease-in-out;
+    }
+
+    .spinner-core {
+      width: 110px;
+      height: 110px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .spinner-core i {
+      width: 50px;
+      height: 50px;
+      color: #f59e0b;
+      animation: corePulse 2s infinite ease-in-out;
+    }
+
+    .gate-title {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      font-style: italic;
+      color: #ffffff;
+      text-transform: uppercase;
+    }
+
+    .gate-subtitle {
+      font-size: 11px;
+      font-family: var(--font-display);
+      letter-spacing: 0.4em;
+      color: #9ca3af;
+      margin-top: 10px;
+      text-transform: uppercase;
+    }
+
+    .gate-divider {
+      width: 48px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 32px 0;
+    }
+
+    .gate-btn {
+      padding: 18px 48px;
+      border-radius: 99px;
+      border: none;
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+      color: #000000;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(245, 158, 11, 0.25);
+      transition: all 0.4s ease;
+    }
+
+    .gate-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 15px 40px rgba(245, 158, 11, 0.45);
+    }
+
+    .gate-note {
+      font-size: 9px;
+      font-family: var(--font-display);
+      color: #4b5563;
+      letter-spacing: 0.1em;
+      margin-top: 16px;
+    }
+
+    /* --- KEYFRAME ANIMATIONS --- */
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 0.9; }
+    }
+    @keyframes corePulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+
+    /* --- RESPONSIVE ADAPTATIONS --- */
+    @media (max-width: 768px) {
+      header {
+        padding: 16px 24px;
+      }
+      .progress-bar-container {
+        display: none; /* Hide progress bar on mobile to fit elements */
+      }
+      main {
+        padding: 24px 24px;
+      }
+      .slide-title-zh {
+        font-size: 28px;
+      }
+      .slide-title-en {
+        font-size: 14px;
+      }
+      .slide-subtitle {
+        margin-top: 12px;
+      }
+      .subtitle-text {
+        font-size: 13px;
+      }
+      .subtitle-text span {
+        display: block;
+        margin-left: 0;
+        margin-top: 2px;
+        font-size: 10px;
+      }
+      .slide-description-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        margin-top: 16px;
+      }
+      .desc-zh {
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .desc-en {
+        font-size: 10px;
+        line-height: 1.5;
+      }
+      .feature-sidebox {
+        align-self: stretch;
+        padding: 16px;
+      }
+      footer {
+        padding: 16px 24px;
+        flex-direction: column;
+        gap: 16px;
+        align-items: center;
+      }
+      .footer-ethos {
+        text-align: center;
+      }
+      .ethos-zh {
+        font-size: 10px;
+      }
+      .gate-title {
+        font-size: 24px;
+      }
+      .gate-btn {
+        padding: 16px 36px;
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body class="theme-red">
+
+  <!-- 1. IMMERSIVE GLOWING CANVAS BACKGROUND -->
+  <canvas id="visualizerCanvas"></canvas>
+  <div class="ambient-overlay"></div>
+  <div class="color-dodge-glow" id="dodgeGlow"></div>
+
+  <!-- 2. MAIN APP CONTENT CONTAINER -->
+  <div class="app-container">
+    
+    <!-- HEADER BRANDING & PROGRESSION -->
+    <header>
+      <div class="brand-group">
+        <div class="brand-icon-box">
+          <i data-lucide="compass"></i>
+        </div>
+        <div>
+          <div class="brand-title">ECHORURA <span>WEB3</span></div>
+          <div class="brand-subtitle">Decentralized Sound Ecosystem</div>
+        </div>
+      </div>
+
+      <div class="progress-bar-container" id="progressBarContainer">
+        <!-- Spawned dynamically in JS -->
+      </div>
+
+      <div class="top-actions">
+        <button class="audio-btn" id="audioToggle" title="音效开关">
+          <i data-lucide="volume-x"></i>
+        </button>
+        
+        <!-- Redirects directly to the main platform page -->
+        <a href="index.html" class="enter-platform-btn" id="enterPlatformBtn">
+          进入平台 <i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+    </header>
+
+    <!-- CENTRAL SLIDES -->
+    <main id="slidesContainer">
+      
+      <!-- CHAPTER I -->
+      <section class="slide active" data-theme="theme-red" data-duration="12">
+        <div>
+          <span class="chapter-tag">第一章：传统垄断的巨墙</span>
+        </div>
+        <div class="slide-title-zh">厂牌垄断与中心化算法钳制</div>
+        <div class="slide-title-en">Label Monopolies & Centralized Algorithmic Control</div>
+        
+        <div class="slide-subtitle">
+          <div class="subtitle-indicator"></div>
+          <div class="subtitle-text">“ 95% 的音乐版权价值流向了哪里？ ”<span>Where does 95% of the music value go?</span></div>
+        </div>
+
+        <div class="slide-description-grid">
+          <div>
+            <p class="desc-zh">
+              在传统音乐产业链中，中心化巨头与垄断厂牌榨取了绝大部分收益。听众受困于算法信息茧房，而独立创作者每万次播放仅得微薄碎银。音乐的自主性与真正的价值被中心化中介彻底剥夺。
+            </p>
+            <p class="desc-en">
+              Traditional music platforms and labels siphon off the majority of artistic value. Listeners are trapped in algorithmic bubbles, while independent creators earn mere fractions of a cent per stream. Creative sovereignty has been lost to centralized intermediaries.
+            </p>
+          </div>
+          <div class="feature-sidebox">
+            <div class="feature-icon-box">
+              <i data-lucide="x"></i>
+            </div>
+            <div>
+              <h4 class="feature-title">Monolithic Wall</h4>
+              <p class="feature-subtitle">Traditional Label Monopoly</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHAPTER II -->
+      <section class="slide" data-theme="theme-blue" data-duration="14">
+        <div>
+          <span class="chapter-tag">第二章：去中心化与 Web3 范式</span>
+        </div>
+        <div class="slide-title-zh">大中华区首个去中心化音乐版权共享平台</div>
+        <div class="slide-title-en">Greater China's First Autonomous Music Distribution Network</div>
+        
+        <div class="slide-subtitle">
+          <div class="subtitle-indicator"></div>
+          <div class="subtitle-text">“ 打破垄断，重建创作者与听众的直接共识。 ”<span>Breaking chains, empowering direct consensus.</span></div>
+        </div>
+
+        <div class="slide-description-grid">
+          <div>
+            <p class="desc-zh">
+              ECHORURA 是诞生于大中华区的首个打破传统厂牌垄断的去中心化音乐分发与版权价值共享平台。依托 Web3 技术，我们将每一首音乐资产化，彻底绕过寻租中介，让创作者与听众共享真正的版权溢价。
+            </p>
+            <p class="desc-en">
+              ECHORURA is Greater China's first decentralized music distribution and copyright value-sharing platform. Utilizing Web3 tech, we transform tracks into immutable creative assets, bypassing middlemen to channel value directly back to the ecosystem.
+            </p>
+          </div>
+          <div class="feature-sidebox">
+            <div class="feature-icon-box">
+              <i data-lucide="globe"></i>
+            </div>
+            <div>
+              <h4 class="feature-title">Autonomous Paradigm</h4>
+              <p class="feature-subtitle">Web3 Direct Ownership</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHAPTER III -->
+      <section class="slide" data-theme="theme-green" data-duration="15">
+        <div>
+          <span class="chapter-tag">第三章：AI 时代的共创听审</span>
+        </div>
+        <div class="slide-title-zh">AI 时代的“共创音乐，共享价值”闭环</div>
+        <div class="slide-title-en">DAO Curation & Sound Equity Investment Arena</div>
+        
+        <div class="slide-subtitle">
+          <div class="subtitle-indicator"></div>
+          <div class="subtitle-text">“ 听众不再是被动的消费者，而是听审官与投资人。 ”<span>Listeners are curators & copyright owners.</span></div>
+        </div>
+
+        <div class="slide-description-grid">
+          <div>
+            <p class="desc-zh">
+              依托 Web3 技术，在 AI 时代连接全球创作者与听众。在 ECHORURA 听审竞技场中，社区通过 DAO 投票决定歌曲的晋升。听众参与音乐版权份额投资，分享收听收益，打造创作者与听众互利共赢的共创价值闭环。
+            </p>
+            <p class="desc-en">
+              Connecting global creators and listeners in the AI era. In ECHORURA's Curation Arena, the community votes to launch songs into the market. Listeners invest in sound equities, share listen rewards, and build a powerful co-creation economy.
+            </p>
+          </div>
+          <div class="feature-sidebox">
+            <div class="feature-icon-box">
+              <i data-lucide="cpu"></i>
+            </div>
+            <div>
+              <h4 class="feature-title">Curation Arena</h4>
+              <p class="feature-subtitle">Co-Creation Value Loop</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHAPTER IV -->
+      <section class="slide" data-theme="theme-gold" data-duration="16">
+        <div>
+          <span class="chapter-tag">第四章：价值回归的纪元</span>
+        </div>
+        <div class="slide-title-zh">让每一份音乐资产实现真正的价值回归</div>
+        <div class="slide-title-en">Sound Unchained. Creative Sovereignty Restored.</div>
+        
+        <div class="slide-subtitle">
+          <div class="subtitle-indicator"></div>
+          <div class="subtitle-text">“ ECHORURA是大中华区首个去中心化音乐社区。 ”<span>Greater China's First Decentralized Music Community.</span></div>
+        </div>
+
+        <div class="slide-description-grid">
+          <div>
+            <p class="desc-zh">
+              在 ECHORURA，创作与收听都是在挖掘价值。我们让音乐回归民众，让收益归于听众与创作者。通过融合 AI 创作、Web3 版权金融与去中心化治理，让每一份音乐资产在 Web3 时代实现真正的价值回归，开启听觉文艺复兴新纪元！
+            </p>
+            <p class="desc-en">
+              In ECHORURA, both creating and listening are mining value. We return music to the people, and return earnings back to listeners and creators. By uniting AI creation, Web3 finance, and DAO governance, every music asset achieves its true value return.
+            </p>
+          </div>
+          <div class="feature-sidebox">
+            <div class="feature-icon-box">
+              <i data-lucide="coins"></i>
+            </div>
+            <div>
+              <h4 class="feature-title">Value Return</h4>
+              <p class="feature-subtitle">Auditory Renaissance Era</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER CONTROLLER -->
+    <footer>
+      <div class="controllers">
+        <button class="control-btn" id="prevBtn" title="上一页">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        
+        <button class="control-btn play-pause-btn" id="playPauseBtn" title="播放/暂停">
+          <i data-lucide="pause"></i>
+        </button>
+        
+        <button class="control-btn" id="nextBtn" title="下一页">
+          <i data-lucide="arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="footer-ethos">
+        <div class="ethos-zh">共创音乐 · 共享价值</div>
+        <div class="ethos-en">Co-Create Music, Share Copyright Value</div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- 3. INITIAL INTERACTION COMPLIANCE GATE -->
+  <div class="gate-overlay" id="interactionGate">
+    <div class="spinner-ring">
+      <div class="spinner-outer"></div>
+      <div class="spinner-glow"></div>
+      <div class="spinner-core">
+        <i data-lucide="compass"></i>
+      </div>
+    </div>
+
+    <h2 class="gate-title">ECHORURA ROADSHOW</h2>
+    <p class="gate-subtitle">极声去中心化路演 DEMO · 听觉文艺复兴</p>
+
+    <div class="gate-divider"></div>
+
+    <button class="gate-btn" id="awakenBtn">
+      开启视听路演 / Enter Cinematic Demo
+    </button>
+    
+    <p class="gate-note">* 建议开启系统声音，体验高保真现场合成模拟合成器音效</p>
+  </div>
+
+  <!-- --- JAVASCRIPT LOGIC --- -->
+  <script>
+    // Initialize icons
+    lucide.createIcons();
+
+    // DOM References
+    const gate = document.getElementById('interactionGate');
+    const awakenBtn = document.getElementById('awakenBtn');
+    const audioToggle = document.getElementById('audioToggle');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const slides = document.querySelectorAll('.slide');
+    const progressBarContainer = document.getElementById('progressBarContainer');
+    const canvas = document.getElementById('visualizerCanvas');
+    const dodgeGlow = document.getElementById('dodgeGlow');
+
+    // State Variables
+    let currentSlideIndex = 0;
+    let isPlaying = true;
+    let progress = 0;
+    let isMuted = true;
+    let lastTime = 0;
+    let audioContext = null;
+    let masterGain = null;
+    let filter = null;
+    let activeOscillators = [];
+
+    // Chapter Durations from HTML dataset
+    const slideDurations = Array.from(slides).map(s => parseFloat(s.dataset.duration || '12'));
+
+    // --- 1. DYNAMIC PROGRESS BARS SPAWN ---
+    progressBarContainer.innerHTML = '';
+    slideDurations.forEach((dur, idx) => {
+      const track = document.createElement('div');
+      track.className = `progress-track ${idx < currentSlideIndex ? 'completed' : ''}`;
+      track.innerHTML = `<div class="progress-fill" id="fill-${idx}"></div>`;
+      track.addEventListener('click', () => {
+        if (gate.classList.contains('hidden')) {
+          navigateToSlide(idx);
+        }
+      });
+      progressBarContainer.appendChild(track);
+    });
+
+    // --- 2. CANVAS GLOWING PARTICLE RENDER ENGINE ---
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let frame = 0;
+    let glitchLines = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initialize 280 particle coordinates
+    function initParticles() {
+      particles = [];
+      for (let i = 0; i < 280; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        const radius = 100 + Math.random() * 300;
+        
+        particles.push({
+          x: Math.sin(phi) * Math.cos(theta) * radius,
+          y: Math.sin(phi) * Math.sin(theta) * radius,
+          z: Math.cos(phi) * radius,
+          ox: Math.sin(phi) * Math.cos(theta) * radius,
+          oy: Math.sin(phi) * Math.sin(theta) * radius,
+          oz: Math.cos(phi) * radius,
+          size: 1.5 + Math.random() * 2.5,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          vz: (Math.random() - 0.5) * 0.5,
+          angle: Math.random() * Math.PI * 2,
+          speed: 0.2 + Math.random() * 0.8
+        });
+      }
+    }
+    initParticles();
+
+    function spawnGlitch() {
+      if (glitchLines.length > 5) return;
+      glitchLines.push({
+        y: Math.random() * canvas.height,
+        h: 2 + Math.random() * 40,
+        opacity: 0.1 + Math.random() * 0.5
+      });
+    }
+
+    function renderLoop() {
+      frame++;
+      
+      // Dynamic trail fading effect to simulate analog video bleed
+      ctx.fillStyle = "rgba(5, 5, 8, 0.15)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      if (currentSlideIndex === 0) {
+        // --- SCENE 1: GLITCHED MONOLITH ---
+        if (Math.random() < 0.05) spawnGlitch();
+
+        ctx.strokeStyle = "rgba(239, 68, 68, 0.04)";
+        ctx.lineWidth = 1;
+        for (let idx = 0; idx < canvas.width; idx += 80) {
+          ctx.beginPath();
+          ctx.moveTo(idx, 0);
+          ctx.lineTo(idx, canvas.height);
+          ctx.stroke();
+        }
+
+        glitchLines.forEach((line, index) => {
+          ctx.fillStyle = `rgba(239, 68, 68, ${line.opacity})`;
+          ctx.fillRect(0, line.y, canvas.width, line.h);
+          line.opacity -= 0.01;
+          if (line.opacity <= 0) glitchLines.splice(index, 1);
+        });
+
+        // Monolith base
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = "rgba(239, 68, 68, 0.15)";
+        ctx.fillStyle = "rgba(15, 10, 15, 0.9)";
+        ctx.strokeStyle = "rgba(239, 68, 68, 0.3)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.rect(centerX - 100, centerY - 180, 200, 360);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        particles.slice(0, 150).forEach(p => {
+          p.x += (Math.random() - 0.5) * 4;
+          p.y += p.vy * 2 - 1.5; 
+          if (p.y < -centerY) p.y = centerY;
+
+          ctx.beginPath();
+          ctx.arc(centerX + p.x, centerY + p.y, p.size * 0.8, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(239, 68, 68, 0.55)";
+          ctx.fill();
+        });
+
+      } else if (currentSlideIndex === 1) {
+        // --- SCENE 2: LEDGER NETWORKS ORBITS ---
+        const rotX = frame * 0.003;
+        const rotY = frame * 0.005;
+
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.08)";
+        ctx.lineWidth = 1;
+
+        const renderedPoints = [];
+
+        particles.slice(0, 180).forEach((p, idx) => {
+          let x1 = p.ox;
+          let y1 = p.oy * Math.cos(rotX) - p.oz * Math.sin(rotX);
+          let z1 = p.oy * Math.sin(rotX) + p.oz * Math.cos(rotX);
+
+          let x2 = x1 * Math.cos(rotY) + z1 * Math.sin(rotY);
+          let y2 = y1;
+          let z2 = -x1 * Math.sin(rotY) + z1 * Math.cos(rotY);
+
+          const fov = 350;
+          const scale = fov / (fov + z2);
+          const screenX = centerX + x2 * scale;
+          const screenY = centerY + y2 * scale;
+
+          renderedPoints.push({ sx: screenX, sy: screenY });
+
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, p.size * scale * 1.3, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${210 + (idx % 20)}, 95%, 70%, ${Math.max(0.2, scale - 0.4)})`;
+          ctx.fill();
+
+          if (idx > 0 && idx % 7 === 0) {
+            ctx.beginPath();
+            ctx.moveTo(screenX, screenY);
+            for (let c = 1; c <= 3; c++) {
+              const target = renderedPoints[idx - c];
+              if (target) {
+                ctx.lineTo(target.sx, target.sy);
+              }
+            }
+            ctx.stroke();
+          }
+        });
+
+      } else if (currentSlideIndex === 2) {
+        // --- SCENE 3: AUDIO SONAR ripples ---
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.25)";
+        ctx.lineWidth = 2;
+        const pulseAmp = 20 + Math.sin(frame * 0.15) * 15;
+        
+        for (let r = 1; r <= 3; r++) {
+          const radius = (frame * r * 2.5) % 350;
+          const opacity = Math.max(0, 1 - radius / 350) * 0.3;
+          ctx.strokeStyle = `rgba(16, 185, 129, ${opacity})`;
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        for (let x = 0; x < canvas.width; x += 10) {
+          const waveY = centerY + Math.sin(x * 0.01 + frame * 0.08) * pulseAmp * Math.cos(x * 0.002 - 1.5);
+          if (x === 0) ctx.moveTo(x, waveY);
+          else ctx.lineTo(x, waveY);
+        }
+        ctx.stroke();
+
+        particles.slice(0, 200).forEach((p, idx) => {
+          p.angle += 0.02 * p.speed;
+          const orbitRadius = 120 + 80 * Math.sin(idx * 0.2) + Math.cos(frame * 0.01) * 30;
+          p.x = Math.cos(p.angle) * orbitRadius;
+          p.y = Math.sin(p.angle) * orbitRadius + Math.sin(frame * 0.05 + idx) * 8;
+
+          ctx.beginPath();
+          ctx.arc(centerX + p.x, centerY + p.y, p.size * (1.1 + Math.sin(frame * 0.1 + idx) * 0.3), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(16, 185, 129, ${0.4 + Math.sin(frame * 0.05 + idx) * 0.3})`;
+          ctx.fill();
+        });
+
+      } else if (currentSlideIndex === 3) {
+        // --- SCENE 4: ASCENSION STARFIELD ---
+        particles.forEach((p, idx) => {
+          p.speed += 0.08;
+          p.ox += Math.cos(p.angle) * p.speed;
+          p.oy += Math.sin(p.angle) * p.speed;
+
+          const screenX = centerX + p.ox;
+          const screenY = centerY + p.oy;
+
+          if (screenX < 0 || screenX > canvas.width || screenY < 0 || screenY > canvas.height) {
+            p.speed = 0.5 + Math.random() * 1.5;
+            p.ox = (Math.random() - 0.5) * 30;
+            p.oy = (Math.random() - 0.5) * 30;
+            p.angle = Math.random() * Math.PI * 2;
+          }
+
+          ctx.strokeStyle = `rgba(245, 158, 11, ${Math.min(0.8, p.speed * 0.08)})`;
+          ctx.lineWidth = p.size * 0.6;
+          ctx.beginPath();
+          ctx.moveTo(screenX - Math.cos(p.angle) * p.speed * 1.2, screenY - Math.sin(p.angle) * p.speed * 1.2);
+          ctx.lineTo(screenX, screenY);
+          ctx.stroke();
+        });
+
+        const grad = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, 150 + Math.sin(frame * 0.1) * 15);
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+        grad.addColorStop(0.3, "rgba(245, 158, 11, 0.45)");
+        grad.addColorStop(0.7, "rgba(251, 191, 36, 0.08)");
+        grad.addColorStop(1, "transparent");
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 160 + Math.sin(frame * 0.1) * 15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+    renderLoop();
+
+    // --- 3. WEB AUDIO SYNTHESIZER ---
+    function initSynth() {
+      if (audioContext) return;
+      
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContextClass();
+
+        masterGain = audioContext.createGain();
+        masterGain.gain.setValueAtTime(isMuted ? 0 : 0.25, audioContext.currentTime);
+        masterGain.connect(audioContext.destination);
+
+        const delay = audioContext.createDelay(1.0);
+        delay.delayTime.setValueAtTime(0.4, audioContext.currentTime);
+        
+        const delayGain = audioContext.createGain();
+        delayGain.gain.setValueAtTime(0.3, audioContext.currentTime);
+
+        delay.connect(delayGain);
+        delayGain.connect(delay);
+        delayGain.connect(masterGain);
+
+        filter = audioContext.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, audioContext.currentTime);
+        filter.Q.setValueAtTime(1.0, audioContext.currentTime);
+        
+        filter.connect(delay);
+        filter.connect(masterGain);
+
+        triggerChordTransition(0);
+      } catch (err) {
+        console.error("Web Audio initialization failed:", err);
+      }
+    }
+
+    function triggerChordTransition(sceneIndex) {
+      if (!audioContext) return;
+
+      const now = audioContext.currentTime;
+
+      // Filter sweeps per scene
+      const filterFreqs = [450, 950, 1400, 2200];
+      filter.frequency.exponentialRampToValueAtTime(filterFreqs[sceneIndex] || 800, now + 3.0);
+
+      // Stop previous notes smoothly
+      activeOscillators.forEach(node => {
+        try {
+          node.gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+          node.osc.stop(now + 1.6);
+        } catch (e) {}
+      });
+      activeOscillators = [];
+
+      // Epic chords progressions
+      const chordFrequencies = [
+        [65.41, 130.81, 196.00, 155.56], // C2, C3, G3, D#3 (Monolith)
+        [87.31, 130.81, 174.61, 220.00, 261.63], // F2, C3, F3, A3, C4 (Decentration)
+        [98.00, 146.83, 196.00, 246.94, 293.66, 369.99], // G2, D3, G3, B3, D4, F#4 (Curation)
+        [130.81, 196.00, 261.63, 329.63, 392.00, 493.88, 587.33] // C3, G3, C4, E4, G4, B4, D5 (Ascended awakening)
+      ];
+
+      const currentChord = chordFrequencies[sceneIndex] || chordFrequencies[0];
+
+      currentChord.forEach((freq, idx) => {
+        const osc = audioContext.createOscillator();
+        const oscGain = audioContext.createGain();
+
+        osc.type = idx % 2 === 0 ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.detune.setValueAtTime((Math.random() - 0.5) * 15, now);
+
+        oscGain.gain.setValueAtTime(0.0001, now);
+        const targetGain = 0.08 / currentChord.length;
+        oscGain.gain.exponentialRampToValueAtTime(targetGain, now + 2.5 + idx * 0.3);
+
+        osc.connect(oscGain);
+        oscGain.connect(filter);
+        osc.start(now);
+
+        activeOscillators.push({ osc, gainNode: oscGain });
+      });
+    }
+
+    // --- 4. NAVIGATION & TIMEPLAY CONTROL ---
+    function navigateToSlide(index) {
+      if (index === currentSlideIndex) return;
+
+      // Update state
+      slides[currentSlideIndex].classList.remove('active');
+      
+      // Update progress tracks classes
+      const tracks = document.querySelectorAll('.progress-track');
+      tracks.forEach((track, idx) => {
+        if (idx < index) {
+          track.classList.add('completed');
+          document.getElementById(`fill-${idx}`).style.width = '100%';
+        } else {
+          track.classList.remove('completed');
+          document.getElementById(`fill-${idx}`).style.width = '0%';
+        }
+      });
+
+      currentSlideIndex = index;
+      progress = 0;
+      slides[currentSlideIndex].classList.add('active');
+
+      // Update body theme color
+      const currentTheme = slides[currentSlideIndex].dataset.theme;
+      bodyThemeSwitch(currentTheme);
+
+      // Trigger synth sound transition
+      triggerChordTransition(currentSlideIndex);
+
+      // Disable/enable arrows
+      prevBtn.disabled = currentSlideIndex === 0;
+    }
+
+    function bodyThemeSwitch(theme) {
+      document.body.className = theme;
+      
+      // Update ambient radial lights
+      const colorAccents = {
+        'theme-red': '#ef4444',
+        'theme-blue': '#3b82f6',
+        'theme-green': '#10b981',
+        'theme-gold': '#f59e0b'
+      };
+      
+      dodgeGlow.style.background = `radial-gradient(circle at 50% 40%, ${colorAccents[theme]}20 0%, transparent 60%)`;
+    }
+
+    // --- 5. LOOP AUTOMATIC TIMELINE ---
+    function timeLoop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const deltaTime = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      if (isPlaying && !gate.classList.contains('hidden') === false) {
+        const slideDuration = slideDurations[currentSlideIndex];
+        progress += deltaTime / slideDuration;
+
+        if (progress >= 1.0) {
+          // Auto advance
+          const nextIndex = (currentSlideIndex + 1) % slides.length;
+          navigateToSlide(nextIndex);
+        } else {
+          // Smooth filling
+          const currentFill = document.getElementById(`fill-${currentSlideIndex}`);
+          if (currentFill) {
+            currentFill.style.width = `${progress * 100}%`;
+          }
+        }
+      }
+
+      requestAnimationFrame(timeLoop);
+    }
+    requestAnimationFrame(timeLoop);
+
+    // --- 6. EVENT BINDINGS & CONTROLS ---
+    awakenBtn.addEventListener('click', () => {
+      gate.classList.add('hidden');
+      isMuted = false;
+      isPlaying = true;
+      audioToggle.classList.add('active');
+      audioToggle.innerHTML = '<i data-lucide="volume-2"></i>';
+      lucide.createIcons();
+
+      initSynth();
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    });
+
+    audioToggle.addEventListener('click', () => {
+      isMuted = !isMuted;
+      audioToggle.classList.toggle('active', !isMuted);
+      
+      if (isMuted) {
+        audioToggle.innerHTML = '<i data-lucide="volume-x"></i>';
+      } else {
+        audioToggle.innerHTML = '<i data-lucide="volume-2"></i>';
+      }
+      lucide.createIcons();
+
+      if (!audioContext) {
+        initSynth();
+      } else {
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        masterGain.gain.exponentialRampToValueAtTime(isMuted ? 0 : 0.25, audioContext.currentTime + 0.3);
+      }
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      if (isPlaying) {
+        playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
+      } else {
+        playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
+      }
+      lucide.createIcons();
+    });
+
+    nextBtn.addEventListener('click', () => {
+      const nextIndex = (currentSlideIndex + 1) % slides.length;
+      navigateToSlide(nextIndex);
+    });
+
+    prevBtn.addEventListener('click', () => {
+      if (currentSlideIndex > 0) {
+        navigateToSlide(currentSlideIndex - 1);
+      }
+    });
+
+    // Check if the current environment has index.html running locally
+    // Set fallback if needed
+    const enterPlatformBtn = document.getElementById('enterPlatformBtn');
+    if (window.location.protocol === 'file:') {
+      enterPlatformBtn.href = 'index.html'; 
+    } else {
+      enterPlatformBtn.href = '/';
+    }
+
+  </script>
+</body>
+</html>
