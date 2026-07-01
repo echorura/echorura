@@ -13,7 +13,7 @@ export default function StartupSequence() {
   const [phase, setPhase] = useState<'logo' | 'text' | 'done'>('logo');
   const [isClient, setIsClient] = useState(false);
   const [sharedSongId, setSharedSongId] = useState<string | null>(null);
-  const { language, t } = useLanguageStore();
+  const { language, setLanguage, t } = useLanguageStore();
   const { setTrack, setPlaylist } = usePlayerStore();
   const router = useRouter();
   const pathname = usePathname();
@@ -252,6 +252,33 @@ export default function StartupSequence() {
                 exit={{ opacity: 0, scale: 0.95, filter: "blur(15px)" }}
                 transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
               >
+                {/* 胶囊式语言切换药丸组件 */}
+                <motion.div 
+                  className="flex items-center bg-white/5 rounded-full p-1 border border-white/10 text-xs font-black mb-8 relative z-50 backdrop-blur-xl"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.8 }}
+                >
+                  <button 
+                    onClick={() => setLanguage('zh')}
+                    className={`px-4 py-2 rounded-full transition-all text-[11px] uppercase tracking-wider font-black cursor-pointer ${language === 'zh' ? 'bg-echo-primary text-black shadow-[0_0_15px_rgba(0,240,255,0.3)]' : 'text-gray-400 hover:text-gray-200'}`}
+                  >
+                    简体中文
+                  </button>
+                  <button 
+                    onClick={() => setLanguage('en')}
+                    className={`px-4 py-2 rounded-full transition-all text-[11px] uppercase tracking-wider font-black cursor-pointer ${language === 'en' ? 'bg-echo-primary text-black shadow-[0_0_15px_rgba(0,240,255,0.3)]' : 'text-gray-400 hover:text-gray-200'}`}
+                  >
+                    English
+                  </button>
+                  <button 
+                    onClick={() => setLanguage('ja')}
+                    className={`px-4 py-2 rounded-full transition-all text-[11px] uppercase tracking-wider font-black cursor-pointer ${language === 'ja' ? 'bg-echo-primary text-black shadow-[0_0_15px_rgba(0,240,255,0.3)]' : 'text-gray-400 hover:text-gray-200'}`}
+                  >
+                    日本語
+                  </button>
+                </motion.div>
+
                 <motion.h1
                   className="text-4xl sm:text-6xl md:text-8xl lg:text-[7rem] font-black text-white mb-6 leading-tight tracking-tighter italic py-4 pr-8 md:pr-12 lg:pr-16"
                   initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
