@@ -49,7 +49,7 @@ const SongRow = ({ song, onPlay, currentTrack, isPlaying, onAddToPlaylist }: any
       onClick={onPlay}
     >
       <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 shadow-md">
-        <img src={song.cover_url || song.cover} alt={song.title} className="w-full h-full object-cover" />
+        <img src={song.cover_url || song.cover} alt={song.title} loading="lazy" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <Play className={`w-4 h-4 fill-white text-white ${!isActive && 'ml-0.5'}`} />
         </div>
@@ -1011,7 +1011,7 @@ const MOODS = [
 
                             {/* Cover */}
                             <div className="w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden relative shrink-0 shadow-2xl group/cover border border-white/10 mt-6 md:mt-0">
-                              <img src={song.cover_url} className="w-full h-full object-cover transition-transform group-hover/cover:scale-110" />
+                              <img src={song.cover_url} loading="lazy" className="w-full h-full object-cover transition-transform group-hover/cover:scale-110" />
                               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/cover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => handlePlay(song)}

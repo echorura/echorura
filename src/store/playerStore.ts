@@ -76,7 +76,7 @@ export const DEMO_TRACKS: Track[] = [
     id: '1',
     title: 'Neon Dreamscape #1',
     artist: '@AI_Mozart',
-    cover: 'https://picsum.photos/seed/11/400/400',
+    cover: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=300&q=70&fm=webp',
     src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // reliable demo audio
     earnRate: 0.005, // 0.005 ECHO per second
   },
@@ -84,7 +84,7 @@ export const DEMO_TRACKS: Track[] = [
     id: '2',
     title: 'Cyber Symphony',
     artist: '@Echo_Creator',
-    cover: 'https://picsum.photos/seed/12/400/400',
+    cover: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=300&q=70&fm=webp',
     src: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
     earnRate: 0.008,
   }
@@ -126,7 +126,7 @@ export const usePlayerStore = create<PlayerState>()(
           id: String(song.id),
           title: song.title,
           artist: song.artist || song.profiles?.display_name || 'Unknown Artist',
-          cover: song.cover_url || 'https://picsum.photos/seed/11/400/400',
+          cover: song.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=300&q=70&fm=webp',
           src: song.audio_url,
           earnRate: song.earnRate || 0.005,
           lyrics: song.lyrics || '',
@@ -138,7 +138,7 @@ export const usePlayerStore = create<PlayerState>()(
             id: String(s.id),
             title: s.title,
             artist: s.artist || s.profiles?.display_name || 'Unknown Artist',
-            cover: s.cover_url || 'https://picsum.photos/seed/11/400/400',
+            cover: s.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=300&q=70&fm=webp',
             src: s.audio_url,
             earnRate: s.earnRate || 0.005,
             lyrics: s.lyrics || '',

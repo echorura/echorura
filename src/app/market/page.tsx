@@ -320,7 +320,7 @@ export default function MarketPage() {
                   className="glass-panel p-6 rounded-[2.5rem] border border-white/10 hover:border-echo-primary/40 transition-all flex flex-col sm:flex-row items-center gap-6 group"
                 >
                   <div className="w-32 h-32 rounded-2xl overflow-hidden shadow-2xl relative shrink-0">
-                    <img src={song.cover_url} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                    <img src={song.cover_url} loading="lazy" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                     {isSoldOut && (
                       <div className="absolute inset-0 bg-black/70 flex items-center justify-center backdrop-blur-sm">
                         <CheckCircle2 className="text-echo-secondary w-10 h-10" />

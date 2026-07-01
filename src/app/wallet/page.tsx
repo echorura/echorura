@@ -529,7 +529,7 @@ export default function AssetHubPage() {
                 shares: eq.shares,
                 currentPrice: 1.0, // 统一 1.00 ECHO 单价
                 totalDividends: dividendMap[eq.song_id] || 0,
-                cover: song?.cover_url || 'https://picsum.photos/seed/11/400/400'
+                cover: song?.cover_url || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=300&q=70&fm=webp'
               };
             });
 

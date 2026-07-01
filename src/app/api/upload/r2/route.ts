@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       Key: objectKey,
       Body: buffer,
       ContentType: file.type,
+      CacheControl: 'public, max-age=31536000, immutable',
     });
 
     await r2Client.send(uploadCommand);

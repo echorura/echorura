@@ -31,7 +31,7 @@ const SongRow = ({ song, index, currentTrack, isPlaying, onPlay, t }: any) => {
       )}
 
       <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 shadow-md">
-        <img src={song.cover_url || song.cover} alt={song.title} className="w-full h-full object-cover" />
+        <img src={song.cover_url || song.cover} alt={song.title} loading="lazy" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           {isActive && isPlaying
             ? <Pause className="w-4 h-4 fill-white text-white" />
@@ -348,7 +348,7 @@ export default function HomeClientPage() {
                   onClick={() => handlePlay(song)}
                 >
                   <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-2 shadow-md">
-                    <img src={song.cover_url || song.cover} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    <img src={song.cover_url || song.cover} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                     <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-amber-400 text-black text-[7px] font-black rounded">
                       #{index + 1}
                     </div>
@@ -409,7 +409,7 @@ export default function HomeClientPage() {
             {creators.length > 0 ? creators.map((creator) => (
               <Link href={`/artist/${creator.id}`} key={creator.id} className="flex items-center gap-3 p-2 rounded-2xl hover:bg-white/5 transition-colors group">
                 <div className="w-10 h-10 rounded-xl bg-gray-800 border border-white/10 overflow-hidden shrink-0">
-                  <img src={creator.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${creator.id}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <img src={creator.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${creator.id}`} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-white font-bold text-sm truncate group-hover:text-echo-primary transition-colors">{creator.name || t('home.unknown_creator')}</h4>
@@ -427,7 +427,7 @@ export default function HomeClientPage() {
               ].map((c) => (
                 <div key={c.seed} className="flex items-center gap-3 p-2 rounded-2xl hover:bg-white/5 transition-colors">
                   <div className="w-10 h-10 rounded-xl bg-gray-800 border border-white/10 overflow-hidden shrink-0">
-                    <img src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${c.seed}`} className="w-full h-full object-cover" />
+                    <img src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${c.seed}`} loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-white font-bold text-sm truncate">{c.name}</h4>
