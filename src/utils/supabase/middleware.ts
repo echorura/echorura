@@ -6,9 +6,12 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY;
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-    process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!,
+    url!,
+    anonKey!,
     {
       cookies: {
         getAll() {

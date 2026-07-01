@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Bug Fix: supabaseAdmin 现在指向 Memfire 主库，不再双写旧 Supabase 全球库
+const adminUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL;
+const adminKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY;
+
 export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-  process.env.MEMFIRE_SERVICE_ROLE_KEY!
+  adminUrl!,
+  adminKey!
 );
 
 export const memfireAdmin = null;

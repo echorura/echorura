@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
 
     const accessToken = authHeader.slice(7);
     const anonClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
     );
     
     const { data: { user }, error: authError } = await anonClient.auth.getUser(accessToken);
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     // 2. 检查交易哈希是否被重复使用，防止重放攻击 (Replay Attack)
     const adminClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
       process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 

@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
 
     const accessToken = authHeader.slice(7);
     const anonClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
     );
     
     const { data: { user }, error: authError } = await anonClient.auth.getUser(accessToken);
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     // 3. 调用原子 RPC 进行余额增加、交易日志入账以及幂等哈希锁定
     const adminClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
       process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 

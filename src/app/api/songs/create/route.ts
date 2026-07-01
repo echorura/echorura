@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
 
     // 2. 用 anon key + bearer token 验证用户身份（只为鉴权）
     const anonClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
     );
     const { data: { user }, error: authError } = await anonClient.auth.getUser(accessToken);
 

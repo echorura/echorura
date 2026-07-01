@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
 
     // 2. Initialize Supabase client and authenticate user
     const anonClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
     );
     const { data: { user }, error: authError } = await anonClient.auth.getUser(accessToken);
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Query database for user's member_number
     const adminClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
       process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
