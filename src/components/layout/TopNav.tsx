@@ -70,6 +70,12 @@ export default function TopNav() {
 
 
 
+  const handleLanguageCycle = () => {
+    if (language === 'zh') setLanguage('en');
+    else if (language === 'en') setLanguage('ja');
+    else setLanguage('zh');
+  };
+
   return (
     <>
       <header className="sticky top-0 z-50 glass-panel border-b-0 border-white/10">
@@ -99,7 +105,17 @@ export default function TopNav() {
 
             {/* Right side: Language, Wallet, Profile */}
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
-              <div className="flex items-center bg-white/5 rounded-full p-0.5 sm:p-1 border border-white/10 text-[8px] sm:text-[10px] font-black">
+              {/* Language Switcher for Mobile (Cycle click icon) */}
+              <button 
+                onClick={handleLanguageCycle}
+                className="flex sm:hidden p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300 hover:text-white"
+                title="Switch Language"
+              >
+                <Languages className="w-5 h-5 text-echo-primary" />
+              </button>
+
+              {/* Language Switcher for Tablet & Desktop */}
+              <div className="hidden sm:flex items-center bg-white/5 rounded-full p-0.5 sm:p-1 border border-white/10 text-[8px] sm:text-[10px] font-black">
                 <button 
                   onClick={() => setLanguage('zh')}
                   className={`px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full transition-all ${language === 'zh' ? 'bg-echo-primary text-black' : 'text-gray-500 hover:text-gray-300'}`}

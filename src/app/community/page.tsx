@@ -211,12 +211,12 @@ export default function CommunityPage() {
                 : <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs font-bold">{userProfile?.display_name?.[0] || '?'}</div>
               }
             </div>
-            <div className="flex-1 space-y-4">
+            <div className="flex-1 space-y-4 min-w-0">
               <textarea 
                 value={newPost}
                 onChange={(e) => setNewPost(e.target.value)}
                 placeholder={user ? (activeTab === 'assembly' ? t('community.placeholder_assembly') : t('community.placeholder_square')) : t('community.login_placeholder')}
-                className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-gray-600 resize-none py-2"
+                className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-gray-600 resize-none py-2 min-w-0"
                 rows={3}
                 readOnly={!user}
               />

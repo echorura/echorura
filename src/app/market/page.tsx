@@ -275,7 +275,7 @@ export default function MarketPage() {
             <Info className="w-3 h-3" />
             {t('compliance.app_name_' + activeConfig.region.toLowerCase())} Launchpad
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-white mb-8 leading-tight italic uppercase tracking-tighter">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-white mb-8 leading-tight italic uppercase tracking-tighter break-words">
             {t('market.header_title')} <br />
             <span className="text-gradient inline-block py-2 pr-6 pl-1">{t('market.header_subtitle')}</span>
           </h1>
