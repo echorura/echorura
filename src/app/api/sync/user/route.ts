@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
     const payload = await req.json();
     const { type, table, record } = payload;
 
-    // 仅处理 profiles 数据表
-    if (table !== 'profiles') {
+    // 仅处理 profiles 和 wallets 数据表
+    if (table !== 'profiles' && table !== 'wallets') {
       return NextResponse.json({ ok: true, message: 'Ignored table' });
     }
 
@@ -33,6 +33,45 @@ export async function POST(req: NextRequest) {
     const sourceDbName = source === 'memfire' ? 'Memfire' : 'Supabase';
     const targetDbName = source === 'memfire' ? 'Supabase' : 'Memfire';
 
+    // A. 处理 wallets 表同步
+    if (table === 'wallets') {
+      console.log(`[Sync Engine] Received ${type} from ${sourceDbName} on wallets for User ID: ${record.user_id}`);
+      
+      // 检查目标库中的钱包记录，防止死循环
+      const { data: targetWallet } = await targetDb
+        .from('wallets')
+        .select('balance, updated_at')
+        .eq('user_id', record.user_id)
+        .maybeSingle();
+
+      if (targetWallet) {
+        const isBalanceEqual = Number(targetWallet.balance) === Number(record.balance);
+        const isTargetNewer = new Date(targetWallet.updated_at) >= new Date(record.updated_at);
+        if (isBalanceEqual || isTargetNewer) {
+          console.log(`[Sync Engine] Wallet for user ${record.user_id} is already up to date on ${targetDbName}. Skipping.`);
+          return NextResponse.json({ success: true, message: 'Already up to date' });
+        }
+      }
+
+      const { error: walletSyncErr } = await targetDb
+        .from('wallets')
+        .upsert({
+          user_id: record.user_id,
+          balance: record.balance,
+          updated_at: record.updated_at,
+          created_at: record.created_at,
+        }, { onConflict: 'user_id' });
+
+      if (walletSyncErr) {
+        console.error(`[Sync Engine] Sync wallet to ${targetDbName} failed:`, walletSyncErr.message);
+        return NextResponse.json({ error: walletSyncErr.message }, { status: 500 });
+      }
+      
+      console.log(`[Sync Engine] Wallet sync complete for User ID: ${record.user_id} to ${targetDbName}`);
+      return NextResponse.json({ success: true });
+    }
+
+    // B. 处理 profiles 表同步
     console.log(`[Sync Engine] Received ${type} from ${sourceDbName} on profiles for ID: ${record.id}`);
 
     // 1. 检查目标数据库中是否已有该用户账号
@@ -70,7 +109,18 @@ export async function POST(req: NextRequest) {
       console.log(`[Sync Engine] Successfully synced Auth user ${record.id} to ${targetDbName}`);
     }
 
-    // 3. 同步 profiles 表对应的资料
+    // 3. 同步 profiles 表对应的资料，加防死循环校验
+    const { data: targetProfile } = await targetDb
+      .from('profiles')
+      .select('updated_at')
+      .eq('id', record.id)
+      .maybeSingle();
+
+    if (targetProfile && new Date(targetProfile.updated_at) >= new Date(record.updated_at)) {
+      console.log(`[Sync Engine] Profile for user ${record.id} is already up to date on ${targetDbName}. Skipping.`);
+      return NextResponse.json({ success: true, message: 'Already up to date' });
+    }
+
     const { error: profileErr } = await targetDb
       .from('profiles')
       .upsert({
