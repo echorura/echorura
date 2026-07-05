@@ -1999,17 +1999,17 @@ function ProfileContent() {
               <button 
                 onClick={() => setIsEditingProfile(true)}
                 className="p-1.5 rounded-lg bg-white/5 hover:bg-echo-primary/20 text-gray-400 hover:text-echo-primary transition-colors border border-white/10 hover:border-echo-primary/50"
-                title="编辑个人资料"
+                title={tSafe('profile.edit_profile_tooltip', '编辑个人资料')}
               >
                 <Settings className="w-4 h-4" />
               </button>
               <button 
                 onClick={handleShareMyArtistPage}
                 className="p-1.5 rounded-lg bg-white/5 hover:bg-echo-secondary/20 text-gray-400 hover:text-echo-secondary transition-colors border border-white/10 hover:border-echo-secondary/50 flex items-center gap-1.5 px-3 py-1 font-bold text-xs"
-                title="分享我的创作者主页"
+                title={tSafe('profile.share_profile_tooltip', '分享我的创作者主页')}
               >
                 <Share2 className="w-3.5 h-3.5" />
-                <span>{copiedArtistLink ? '已复制！' : '分享主页'}</span>
+                <span>{copiedArtistLink ? tSafe('profile.copied_link_text', '已复制！') : tSafe('profile.share_profile_btn_text', '分享主页')}</span>
               </button>
             </div>
             <p className="text-echo-primary font-mono text-sm flex items-center gap-2">
@@ -2696,19 +2696,19 @@ function ProfileContent() {
                           onClick={() => setEditAiStyle(s as any)}
                           className={`py-1.5 px-2 rounded-lg text-[10px] font-bold capitalize transition-all ${editAiStyle === s ? 'bg-white/15 text-white border border-white/20' : 'bg-transparent text-gray-500 hover:text-white border border-transparent'}`}
                         >
-                          {s === 'cyber' ? '赛博霓虹' : s === 'zen' ? '水墨禅意' : s === 'vaporwave' ? '蒸汽波' : '极光治愈'}
+                          {tSafe('profile.ai_style_' + s, s === 'cyber' ? '赛博霓虹' : s === 'zen' ? '水墨禅意' : s === 'vaporwave' ? '蒸汽波' : '极光治愈')}
                         </button>
                       ))}
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-gray-400 uppercase">画面描述 (做图要求 / AI Prompt)</label>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase">{tSafe('profile.ai_prompt_label', '画面描述 (做图要求 / AI Prompt)')}</label>
                       <textarea
                         value={editAiPrompt}
                         onChange={(e) => setEditAiPrompt(e.target.value)}
                         rows={2}
                         className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-white text-xs focus:border-echo-primary/50 focus:outline-none mt-2"
-                        placeholder="描述您想要的画面细节（如：深海发光水母，金色浪花，梦幻星空...）"
+                        placeholder={tSafe('profile.ai_prompt_placeholder', '描述您想要的画面细节（如：深海发光水母，金色浪花，梦幻星空...）')}
                       />
                     </div>
 
@@ -2721,19 +2721,19 @@ function ProfileContent() {
                       {isGeneratingEditCover ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          正在调用 Stable Diffusion / FLUX 大模型合成中...
+                          {tSafe('profile.ai_generating', '正在调用 Stable Diffusion / FLUX 大模型合成中...')}
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 animate-bounce" />
-                          一键重构智能封面
+                          {tSafe('profile.ai_generate_action', '一键重构智能封面')}
                         </>
                       )}
                     </button>
 
                     {editCoverPreviewUrl && (
                       <div className="flex flex-col items-center gap-2 pt-2 border-t border-white/5">
-                        <span className="text-[10px] text-gray-500 font-bold">✨ 大模型合成物理黑胶封面预览</span>
+                        <span className="text-[10px] text-gray-500 font-bold">{tSafe('profile.ai_preview_title', '✨ 大模型合成物理黑胶封面预览')}</span>
                         <img src={editCoverPreviewUrl} alt="AI Generated Preview" className="w-40 h-40 rounded-xl object-cover border border-white/20 shadow-xl" />
                       </div>
                     )}
@@ -2743,15 +2743,15 @@ function ProfileContent() {
                 {/* Lyrics Section */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">作品歌词 (Lyrics)</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">{tSafe('profile.lyrics_label', '作品歌词 (Lyrics)')}</label>
                     <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
                       <button type="button" onClick={() => setEditLyricsMode('plain')}
                         className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${editLyricsMode === 'plain' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}>
-                        纯文本
+                        {tSafe('profile.lyrics_plain', '纯文本')}
                       </button>
                       <button type="button" onClick={() => setEditLyricsMode('lrc')}
                         className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all flex items-center gap-1 ${editLyricsMode === 'lrc' ? 'bg-echo-primary text-black' : 'text-gray-500 hover:text-white'}`}>
-                        ⏱ LRC 时间轴
+                        ⏱ {tSafe('profile.lyrics_lrc', 'LRC 时间轴')}
                       </button>
                     </div>
                   </div>
@@ -2797,20 +2797,20 @@ function ProfileContent() {
                   {editLyricsMode === 'lrc' && editSongLyrics && (
                     <p className={`text-[9px] font-mono ${/\[\d{2}:\d{2}/.test(editSongLyrics) ? 'text-echo-primary' : 'text-yellow-400'}`}>
                       {/\[\d{2}:\d{2}/.test(editSongLyrics)
-                        ? `✅ 已检测到 LRC 时间戳，共 ${(editSongLyrics.match(/\[\d{2}:\d{2}/g) || []).length} 行将精准同步`
-                        : '⚠️ 未检测到时间戳，请使用 [00:00.00] 格式，否则将退回比例滚动模式'}
+                        ? tSafe('profile.upload_lrc_valid', '✅ 已检测到 LRC 时间戳，共 {count} 行将精准同步').replace('{count}', String((editSongLyrics.match(/\[\d{2}:\d{2}/g) || []).length))
+                        : tSafe('profile.upload_lrc_invalid', '⚠️ 未检测到时间戳，请使用 [00:00.00] 格式，否则将退回比例滚动模式')}
                     </p>
                   )}
                   {editSongLyrics && !editLyricsMode && /\[\d{2}:\d{2}/.test(editSongLyrics) && (
                     <p className="text-[9px] text-echo-primary font-mono">
-                      ✅ 已检测到 LRC 时间戳格式
+                      {tSafe('profile.edit_lrc_format_detected', '✅ 已检测到 LRC 时间戳格式')}
                     </p>
                   )}
                 </div>
 
                 {/* Genre Tags Selection */}
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase ml-1 block mb-2">音乐风格标签 (Genres - 可多选)</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase ml-1 block mb-2">{tSafe('profile.edit_genres_title', '音乐风格标签 (Genres - 可多选)')}</label>
                   <div className="flex flex-wrap gap-2">
                     {GENRES.map((g) => {
                       const isSelected = editSelectedGenres.includes(g);
@@ -2825,7 +2825,7 @@ function ProfileContent() {
                           }}
                           className={`py-1.5 px-3 rounded-full text-xs font-bold transition-all ${isSelected ? 'bg-echo-primary/20 text-echo-primary border border-echo-primary/50' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}
                         >
-                          {g}
+                          {tSafe('genre.' + g, g)}
                         </button>
                       );
                     })}
@@ -2834,7 +2834,7 @@ function ProfileContent() {
 
                 {/* Mood Tags Selection */}
                 <div>
-                  <label className="text-xs font-bold text-gray-400 uppercase ml-1 block mb-2">灵魂状态标签 (Moods - 可多选)</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase ml-1 block mb-2">{tSafe('profile.edit_moods_title', '灵魂状态标签 (Moods - 可多选)')}</label>
                   <div className="flex flex-wrap gap-2">
                     {MOODS.map((m) => {
                       const isSelected = editSelectedMoods.includes(m);
@@ -2849,7 +2849,7 @@ function ProfileContent() {
                           }}
                           className={`py-1.5 px-3 rounded-full text-xs font-bold transition-all ${isSelected ? 'bg-echo-secondary/20 text-echo-secondary border border-echo-secondary/50' : 'bg-white/5 text-gray-400 hover:text-white border border-white/5'}`}
                         >
-                          {m}
+                          {tSafe('mood.' + m, m)}
                         </button>
                       );
                     })}
@@ -2900,67 +2900,69 @@ function ProfileContent() {
           <div className="relative w-full max-w-2xl glass-panel rounded-3xl p-8 border border-white/10 shadow-2xl max-h-full overflow-y-auto z-10">
             <h2 className="text-3xl font-black text-white mb-8 uppercase tracking-tighter flex items-center gap-3">
               <Upload className="w-8 h-8 text-echo-primary" />
-              发布作品 (Studio)
+              {tSafe('profile.upload_modal_title', '发布作品 (Studio)')}
             </h2>
 
             <form onSubmit={handleUpload} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">作品标题</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">{tSafe('profile.upload_title_label', '作品标题')}</label>
                     <input 
                       type="text" 
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       required
                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:border-echo-primary/50 focus:outline-none mt-2"
-                      placeholder="例如: Neon Dreamscape"
+                      placeholder={tSafe('profile.upload_title_placeholder', '例如: Neon Dreamscape')}
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">艺术家名称</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">{tSafe('profile.upload_artist_label', '艺术家名称')}</label>
                     <input 
                       type="text" 
                       value={artist}
                       onChange={(e) => setArtist(e.target.value)}
                       className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-white focus:border-echo-primary/50 focus:outline-none mt-2"
-                      placeholder="默认使用用户名"
+                      placeholder={tSafe('profile.upload_artist_placeholder', '默认使用用户名')}
                     />
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-gray-400 uppercase ml-1">作品歌词 (Lyrics)</label>
+                      <label className="text-xs font-bold text-gray-400 uppercase ml-1">{tSafe('profile.upload_lyrics_label', '作品歌词 (Lyrics)')}</label>
                       <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
                         <button type="button" onClick={() => setUploadLyricsMode('plain')}
                           className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${uploadLyricsMode === 'plain' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}>
-                          纯文本
+                          {tSafe('profile.upload_lyrics_plain', '纯文本')}
                         </button>
                         <button type="button" onClick={() => setUploadLyricsMode('lrc')}
                           className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all flex items-center gap-1 ${uploadLyricsMode === 'lrc' ? 'bg-echo-primary text-black' : 'text-gray-500 hover:text-white'}`}>
-                          ⏱ LRC 时间轴
+                          {tSafe('profile.upload_lyrics_lrc', '⏱ LRC 时间轴')}
                         </button>
                       </div>
                     </div>
 
                     {uploadLyricsMode === 'lrc' && (
                       <div className="bg-echo-primary/5 border border-echo-primary/20 rounded-xl p-3 space-y-2">
-                        <p className="text-[10px] text-echo-primary font-bold uppercase tracking-widest">📌 LRC 时间轴格式说明</p>
+                        <p className="text-[10px] text-echo-primary font-bold uppercase tracking-widest">{tSafe('profile.upload_lrc_hint_title', '📌 LRC 时间轴格式说明')}</p>
                         <p className="text-[10px] text-gray-400 leading-relaxed font-mono">
-                          每行格式：<span className="text-white">[分:秒.毫秒] 歌词文字</span><br />
-                          例如：<span className="text-echo-primary">[00:12.34] 那是多年以前</span><br />
-                          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-echo-primary">[00:15.80] 秋天的一个傍晚</span>
+                          {tSafe('profile.upload_lrc_hint_body', '每行格式：')}<span className="text-white">{tSafe('profile.upload_lrc_format_example', '[分:秒.毫秒] 歌词文字')}</span><br />
+                          {tSafe('profile.upload_lrc_example_label', '例如：')}<span className="text-echo-primary">{tSafe('profile.upload_lrc_example_line1', '[00:12.34] 那是多年以前')}</span><br />
+                          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-echo-primary">{tSafe('profile.upload_lrc_example_line2', '[00:15.80] 秋天的一个傍晚')}</span>
                         </p>
                         <div className="flex gap-2 flex-wrap mt-2">
                           <button type="button"
                             onClick={openUploadSyncStudio}
                             disabled={!audioFile}
                             className="text-[10px] text-black font-black bg-echo-primary border border-echo-primary/50 px-3 py-1.5 rounded-lg hover:bg-echo-primary/90 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-                            {!audioFile ? '请先选择音频' : '🎧 开启录音棚打轴模式'}
+                            {!audioFile 
+                              ? tSafe('profile.upload_lrc_select_audio_first', '请先选择音频') 
+                              : tSafe('profile.upload_lrc_studio_btn', '🎧 开启录音棚打轴模式')}
                           </button>
                           <button type="button"
-                            onClick={() => setLyrics('[00:00.00] 第一句歌词\n[00:04.00] 第二句歌词\n[00:08.00] 第三句歌词\n[00:12.00] 请替换为实际歌词与对应时间戳')}
+                            onClick={() => setLyrics(tSafe('profile.upload_lrc_template_content', '[00:00.00] 第一句歌词\n[00:04.00] 第二句歌词\n[00:08.00] 第三句歌词\n[00:12.00] 请替换为实际歌词与对应时间戳'))}
                             className="text-[9px] text-echo-primary font-bold bg-echo-primary/10 border border-echo-primary/20 px-2.5 py-1 rounded-lg hover:bg-echo-primary/20 transition-all cursor-pointer">
-                            📋 LRC 模板
+                            {tSafe('profile.upload_lrc_template', '📋 LRC 模板')}
                           </button>
                         </div>
                       </div>
@@ -2978,20 +2980,20 @@ function ProfileContent() {
                           : 'border-white/10 focus:border-echo-primary/50'
                       }`}
                       placeholder={uploadLyricsMode === 'lrc'
-                        ? '[00:00.00] 第一句歌词\n[00:04.50] 第二句歌词\n[00:09.00] 第三句歌词...'
-                        : '粘贴作品歌词（纯文本，将按比例滚动显示）...'}
+                        ? tSafe('profile.upload_lyrics_placeholder_lrc', '[00:00.00] 第一句歌词\n[00:04.50] 第二句歌词\n[00:09.00] 第三句歌词...')
+                        : tSafe('profile.upload_lyrics_placeholder_plain', '粘贴作品歌词（纯文本，将按比例滚动显示）...')}
                     />
                     {uploadLyricsMode === 'lrc' && lyrics && (
                       <p className={`text-[9px] font-mono ${/\[\d{2}:\d{2}/.test(lyrics) ? 'text-echo-primary' : 'text-yellow-400'}`}>
                         {/\[\d{2}:\d{2}/.test(lyrics)
-                          ? `✅ 已检测到 LRC 时间戳，共 ${(lyrics.match(/\[\d{2}:\d{2}/g) || []).length} 行将精准同步`
-                          : '⚠️ 未检测到时间戳，请使用 [00:00.00] 格式，否则将退回比例滚动模式'}
+                          ? tSafe('profile.upload_lrc_valid', '✅ 已检测到 LRC 时间戳，共 {count} 行将精准同步').replace('{count}', String((lyrics.match(/\[\d{2}:\d{2}/g) || []).length))
+                          : tSafe('profile.upload_lrc_invalid', '⚠️ 未检测到时间戳，请使用 [00:00.00] 格式，否则将退回比例滚动模式')}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">音乐风格 (Genres)</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">{tSafe('profile.upload_genres_label', '音乐风格 (Genres)')}</label>
                     <div className="flex flex-wrap gap-2 mt-2 mb-4">
                       {GENRES.map(tag => (
                         <button
@@ -3010,12 +3012,12 @@ function ProfileContent() {
                             : 'bg-white/5 text-gray-400 border border-white/10 hover:border-echo-primary/50'
                           }`}
                         >
-                          {tag}
+                          {tSafe('genre.' + tag, tag)}
                         </button>
                       ))}
                     </div>
 
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">灵魂状态 (Soul States)</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">{tSafe('profile.upload_moods_label', '灵魂状态 (Soul States)')}</label>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {MOODS.map(tag => (
                         <button
@@ -3034,7 +3036,7 @@ function ProfileContent() {
                             : 'bg-white/5 text-gray-400 border border-white/10 hover:border-echo-secondary/50'
                           }`}
                         >
-                          {tag}
+                          {tSafe('mood.' + tag, tag)}
                         </button>
                       ))}
                     </div>
@@ -3043,12 +3045,12 @@ function ProfileContent() {
 
                 <div className="space-y-4">
                   <div className="relative group">
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1 block mb-2">上传音频文件 (MP3/WAV)</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1 block mb-2">{tSafe('profile.upload_audio_label', '上传音频文件 (MP3/WAV)')}</label>
                     
                     {compressionState.status === 'idle' ? (
                       <div className="mt-2 border-2 border-dashed border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 group-hover:border-echo-primary/30 transition-colors relative">
                         <Music className="w-8 h-8 text-gray-500" />
-                        <span className="text-xs text-gray-400">选择或拖入音频文件</span>
+                        <span className="text-xs text-gray-400">{tSafe('profile.upload_audio_drag', '选择或拖入音频文件')}</span>
                         <input 
                           type="file" 
                           accept="audio/*" 
@@ -3090,7 +3092,7 @@ function ProfileContent() {
                     ) : compressionState.status === 'done' ? (
                       <div className="mt-2 border border-echo-primary/30 bg-echo-primary/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-1.5 relative h-32 group hover:border-echo-primary/50 transition-colors">
                         <CheckCircle2 className="w-8 h-8 text-echo-primary" />
-                        <span className="text-xs text-echo-primary font-black tracking-wider uppercase">✓ 极声声码优化完成</span>
+                        <span className="text-xs text-echo-primary font-black tracking-wider uppercase">{tSafe('profile.upload_audio_optimized', '✓ 极声声码优化完成')}</span>
                         <p className="text-[10px] font-mono text-gray-400 max-w-full truncate px-4">
                           {audioFile?.name}
                         </p>
@@ -3114,9 +3116,9 @@ function ProfileContent() {
                     ) : (
                       <div className="mt-2 border border-red-500/20 bg-red-500/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 relative h-32">
                         <div className="text-red-500 font-bold text-xs uppercase tracking-widest text-center">
-                          {compressionState.message || '❌ 优化发生错误'}
+                          {compressionState.message || tSafe('profile.upload_audio_error', '❌ 优化发生错误')}
                         </div>
-                        <span className="text-[10px] text-gray-400">点击重新选择并上传</span>
+                        <span className="text-[10px] text-gray-400">{tSafe('profile.upload_audio_retry', '点击重新选择并上传')}</span>
                         <input 
                           type="file" 
                           accept="audio/*" 
@@ -3129,14 +3131,14 @@ function ProfileContent() {
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-gray-400 uppercase ml-1">作品封面</label>
+                      <label className="text-xs font-bold text-gray-400 uppercase ml-1">{tSafe('profile.upload_cover_label', '作品封面')}</label>
                       <div className="flex bg-black/40 rounded-lg p-0.5 border border-white/5">
                         <button
                           type="button"
                           onClick={() => setCoverSource('upload')}
                           className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${coverSource === 'upload' ? 'bg-echo-primary text-black' : 'text-gray-400 hover:text-white'}`}
                         >
-                          自主上传
+                          {tSafe('profile.upload_cover_manual', '自主上传')}
                         </button>
                         <button
                           type="button"
@@ -3144,7 +3146,7 @@ function ProfileContent() {
                           className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${coverSource === 'ai' ? 'bg-gradient-to-r from-echo-primary to-echo-secondary text-black' : 'text-gray-400 hover:text-white'}`}
                         >
                           <Sparkles className="w-2.5 h-2.5" />
-                          AI 智能创作
+                          {tSafe('profile.upload_cover_ai', 'AI 智能创作')}
                         </button>
                       </div>
                     </div>
@@ -3155,7 +3157,7 @@ function ProfileContent() {
                           {coverFile ? (
                             <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover opacity-50" />
                           ) : <ImageIcon className="w-8 h-8 text-gray-500" />}
-                          <span className="text-xs text-gray-400 relative z-10">{coverFile ? '已选择封面' : '选择或拖入封面'}</span>
+                          <span className="text-xs text-gray-400 relative z-10">{coverFile ? tSafe('profile.upload_cover_selected', '已选择封面') : tSafe('profile.upload_cover_drag', '选择或拖入封面')}</span>
                           <input 
                             type="file" 
                             accept="image/*" 
@@ -3178,32 +3180,32 @@ function ProfileContent() {
                                   : 'border-white/5 bg-black/20 text-gray-400 hover:border-white/20'
                               }`}
                             >
-                              {style === 'cyber' ? '赛博霓虹' : style === 'zen' ? '水墨禅意' : style === 'vaporwave' ? '蒸汽波' : '极光治愈'}
+                              {style === 'cyber' ? tSafe('profile.upload_ai_style_cyber', '赛博霓虹') : style === 'zen' ? tSafe('profile.upload_ai_style_zen', '水墨禅意') : style === 'vaporwave' ? tSafe('profile.upload_ai_style_vaporwave', '蒸汽波') : tSafe('profile.upload_ai_style_ambient', '极光治愈')}
                             </button>
                           ))}
                         </div>
 
                         <div>
                           <div className="flex justify-between items-center mb-1.5">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">画面描述 (做图要求 / AI Prompt)</label>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">{tSafe('profile.upload_ai_prompt_label', '画面描述 (做图要求 / AI Prompt)')}</label>
                             <button
                               type="button"
                               onClick={() => {
                                 if (!title) {
-                                  alert('请先填写作品标题，以便 AI 捕获核心意境！');
+                                  alert(tSafe('profile.upload_ai_prompt_alert', '请先填写作品标题，以便 AI 捕获核心意境！'));
                                   return;
                                 }
                                 const inspirations = [
-                                  `超写实浮雕，未来主义 ${aiStyle === 'cyber' ? '霓虹都市，发光雨街，漂浮全息黑胶' : aiStyle === 'zen' ? '墨水山峦叠嶂，金色朝阳，微风泛舟' : aiStyle === 'vaporwave' ? '粉红霓虹雕塑，数码落日，波形网格' : '空灵极光星云，微尘极光雾霭，发光晶体'}，高画质，电影级质感`,
-                                  `极简抽象主义，${title} 情绪写照，${selectedGenres.join(' ') || '迷幻'} 音频震动，三维空间，${aiStyle === 'cyber' ? '赛博蓝绿' : aiStyle === 'zen' ? '暖金古砂' : aiStyle === 'vaporwave' ? '粉红天蓝' : '薰衣草紫'} 色调，8k渲染`,
-                                  `未来写实主义，去中心化音乐节点守护者，漂浮发光声波流体，${selectedMoods.join(' ') || '孤独'} 的灵魂共鸣，数字粒子星座，唯美浪漫`
+                                  `hyperrealistic 3D relief, futuristic ${aiStyle === 'cyber' ? 'neon cityscape, glowing rain streets, floating holographic vinyl' : aiStyle === 'zen' ? 'ink wash mountains, golden sunrise, breeze boating' : aiStyle === 'vaporwave' ? 'pink neon sculpture, digital sunset, grid wave' : 'ethereal aurora nebula, microdust aurora haze, glowing crystals'}, high quality, cinematic lighting`,
+                                  `minimalist abstraction, emotional portrayal of ${title}, audio vibrations of ${selectedGenres.join(' ') || 'psychedelic'} style, 3D space, ${aiStyle === 'cyber' ? 'cyber blue and green' : aiStyle === 'zen' ? 'warm gold and ancient sand' : aiStyle === 'vaporwave' ? 'pink and sky blue' : 'lavender purple'} tones, 8k render`,
+                                  `futuristic realism, decentralized music node guardian, floating glowing soundwave fluid, emotional resonance of ${selectedMoods.join(' ') || 'lonely'} souls, digital particle constellation, beautiful and romantic`
                                 ];
                                 const randomInspiration = inspirations[Math.floor(Math.random() * inspirations.length)];
                                 setAiPrompt(randomInspiration);
                               }}
                               className="text-[9px] font-black text-echo-primary hover:underline flex items-center gap-0.5 cursor-pointer"
                             >
-                              💡 随机生成灵感描述词
+                              {tSafe('profile.upload_ai_random_btn', '💡 随机生成灵感描述词')}
                             </button>
                           </div>
                           <textarea
@@ -3212,7 +3214,7 @@ function ProfileContent() {
                             rows={2}
                             maxLength={100}
                             className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-xs text-white placeholder-gray-600 focus:border-echo-primary/50 focus:outline-none resize-none"
-                            placeholder="输入做图要求，例如: 赛博朋克霓虹城市、浮空飞船、发光雨街、超现实主义..."
+                            placeholder={tSafe('profile.upload_ai_prompt_placeholder', '输入做图要求，例如: 赛博朋克霓虹城市、浮空飞船...')}
                           />
                         </div>
 
@@ -3221,13 +3223,13 @@ function ProfileContent() {
                             <>
                               <img src={URL.createObjectURL(coverFile)} className="absolute inset-0 w-full h-full object-cover" />
                               <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span className="text-[10px] text-white font-mono bg-black/70 px-2.5 py-1 rounded-md border border-white/10">已智能排版生成</span>
+                                <span className="text-[10px] text-white font-mono bg-black/70 px-2.5 py-1 rounded-md border border-white/10">{tSafe('profile.upload_cover_generated', '已智能排版生成')}</span>
                               </div>
                             </>
                           ) : (
                             <div className="text-center space-y-1">
                               <Sparkles className="w-6 h-6 text-echo-secondary mx-auto animate-pulse" />
-                              <p className="text-[9px] text-gray-500">根据歌曲信息智能渲染高级艺术封面</p>
+                              <p className="text-[9px] text-gray-500">{tSafe('profile.upload_cover_ai_preview', '根据歌曲信息智能渲染高级艺术封面')}</p>
                             </div>
                           )}
                         </div>
@@ -3241,12 +3243,12 @@ function ProfileContent() {
                           {isGeneratingCover ? (
                             <>
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              正在解析旋律与情绪...
+                              {tSafe('profile.upload_ai_generating', '正在解析旋律与情绪...')}
                             </>
                           ) : (
                             <>
                               <Sparkles className="w-3.5 h-3.5" />
-                              {coverFile ? '重新生成 AI 封面' : '一键生成智能封面'}
+                              {coverFile ? tSafe('profile.upload_ai_regen_btn', '重新生成 AI 封面') : tSafe('profile.upload_ai_gen_btn', '一键生成智能封面')}
                             </>
                           )}
                         </button>
@@ -3256,7 +3258,7 @@ function ProfileContent() {
 
                   {/* Recommendation & Promotion Mode Selector */}
                   <div className="glass-panel p-4 rounded-2xl border border-white/10 bg-white/5 space-y-4">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">推荐推广模式 (Promotion Selector)</label>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">{tSafe('profile.upload_promotion_label', '推荐推广模式 (Promotion Selector)')}</label>
                     
                     <div className="grid grid-cols-1 gap-2.5">
                       {/* Option A: Regular Self-Publish */}
@@ -3271,11 +3273,11 @@ function ProfileContent() {
                         <div className="space-y-0.5">
                           <div className="text-xs font-bold text-white flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-echo-primary"></span>
-                            普通自主上架 (Regular Upload)
+                            {tSafe('profile.upload_mode_regular_title', '普通自主上架 (Regular Upload)')}
                           </div>
                           <p className="text-[9px] text-gray-500 leading-relaxed">
-                            • AI 指纹质检后普通入库上架 <br />
-                            • 🎁 创作者奖励：<span className="text-echo-primary font-bold">+1.00 ECHO</span>
+                            {tSafe('profile.upload_mode_regular_desc', '• AI 指纹质检后普通入库上架')} <br />
+                            • 🎁 {tSafe('profile.upload_creator_reward', '创作者奖励')}：<span className="text-echo-primary font-bold">+1.00 ECHO</span>
                           </p>
                         </div>
                         <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${uploadMode === 'regular' ? 'border-echo-primary' : 'border-white/20'}`}>
@@ -3297,13 +3299,13 @@ function ProfileContent() {
                         <div className="space-y-0.5">
                           <div className="text-xs font-bold text-white flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-echo-secondary animate-pulse"></span>
-                            质押冲刺「本日推荐榜」 (Stake Curation)
+                            {tSafe('profile.upload_mode_stake_title', '质押冲刺「本日推荐榜」 (Stake Curation)')}
                           </div>
                           <p className="text-[9px] text-gray-500 leading-relaxed">
-                            • 进入「听审竞技场」竞逐 30 票 Upvote 挑战 <br />
-                            • 🏆 挑战成功：<span className="text-echo-secondary font-bold">登上首页「本日推荐榜」</span>，并<span className="text-white font-bold">退回质押积分</span>！ <br />
-                            • 🔽 挑战失败：质押不退并作为伯乐分红，作品保留为普通 <br />
-                            • 🔒 质押数量：<span className="text-rose-400 font-bold">10.00 ECHO</span>
+                            {tSafe('profile.upload_mode_stake_desc1', '• 进入「听审竞技场」竞逐 30 票 Upvote 挑战')} <br />
+                            • 🏆 {tSafe('profile.upload_mode_stake_win', '挑战成功')}：<span className="text-echo-secondary font-bold">{tSafe('profile.upload_mode_stake_win_desc1', '登上首页「本日推荐榜」')}</span>{tSafe('profile.upload_mode_stake_win_and', '，并')}<span className="text-white font-bold">{tSafe('profile.upload_mode_stake_win_desc2', '退回质押积分')}</span>！ <br />
+                            • 🔽 {tSafe('profile.upload_mode_stake_fail', '挑战失败')}：{tSafe('profile.upload_mode_stake_fail_desc', '质押不退并作为伯乐分红，作品保留为普通')} <br />
+                            • 🔒 {tSafe('profile.upload_mode_stake_amount', '质押数量')}：<span className="text-rose-400 font-bold">10.00 ECHO</span>
                           </p>
                         </div>
                         <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${uploadMode === 'stake' ? 'border-echo-secondary' : 'border-white/20'}`}>
@@ -3318,7 +3320,7 @@ function ProfileContent() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-echo-primary" />
-                        <span className="text-sm font-bold text-white uppercase tracking-tighter">开启歌曲共创</span>
+                        <span className="text-sm font-bold text-white uppercase tracking-tighter">{tSafe('profile.upload_ipo_toggle', '开启歌曲共创')}</span>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -3334,7 +3336,7 @@ function ProfileContent() {
                     {isIpoActive && (
                       <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                         <div>
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">发行总份额 (1 ECHO = 1 份)</label>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">{tSafe('profile.upload_ipo_shares_label', '发行总份额 (1 ECHO = 1 份)')}</label>
                           <input 
                             type="number" 
                             value={totalShares}
@@ -3343,7 +3345,7 @@ function ProfileContent() {
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-gray-500 uppercase">权益出售比例: {ipoPercentage}%</label>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase">{tSafe('profile.upload_ipo_sell_ratio', '权益出售比例')}: {ipoPercentage}%</label>
                           <input 
                             type="range" 
                             min="5" 
@@ -3354,15 +3356,15 @@ function ProfileContent() {
                           />
                           <div className="mt-3 p-2 bg-black/40 rounded-xl border border-white/5 space-y-1">
                             <div className="flex justify-between text-[9px]">
-                              <span className="text-gray-500">听众固定收益</span>
+                              <span className="text-gray-500">{tSafe('profile.upload_ipo_listener_income', '听众固定收益')}</span>
                               <span className="text-echo-primary font-bold">30%</span>
                             </div>
                             <div className="flex justify-between text-[9px]">
-                              <span className="text-gray-500">权益池分配</span>
+                              <span className="text-gray-500">{tSafe('profile.upload_ipo_equity_pool', '权益池分配')}</span>
                               <span className="text-echo-secondary font-bold">70%</span>
                             </div>
                             <div className="pt-1 border-t border-white/5 flex justify-between text-[9px]">
-                              <span className="text-gray-400">你保留的权益</span>
+                              <span className="text-gray-400">{tSafe('profile.upload_ipo_your_equity', '你保留的权益')}</span>
                               <span className="text-white font-bold">{100 - ipoPercentage}%</span>
                             </div>
                           </div>
@@ -3377,9 +3379,9 @@ function ProfileContent() {
                           <Sparkles className="w-5 h-5" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold text-white">推送给粉丝 (Fan Push)</h4>
+                          <h4 className="text-sm font-bold text-white">{tSafe('profile.upload_fan_push_title', '推送给粉丝 (Fan Push)')}</h4>
                           <p className="text-[10px] text-gray-400 mt-1">
-                            向关注你的粉丝发送上新通知
+                            {tSafe('profile.upload_fan_push_desc', '向关注你的粉丝发送上新通知')}
                           </p>
                         </div>
                       </div>
@@ -3401,7 +3403,7 @@ function ProfileContent() {
                   className="w-4 h-4 rounded accent-echo-primary cursor-pointer shrink-0 mt-0.5"
                 />
                 <label htmlFor="creator-agreement-check" className="text-xs text-gray-400 leading-normal cursor-pointer">
-                  我已认真阅读并自愿同意签署 <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsCreatorAgreementOpen(true); }} className="text-echo-primary hover:text-echo-primary-hover hover:underline font-bold cursor-pointer transition-colors">《极声音乐创作者原创作品上传与收益分配协议》</span>。我明确知悉并同意本协议第三条：<strong>作品一经发布，即自动进入听众分账及权益共创流通，因涉及多方既得财产安全，作品将永久存续在平台中，创作者不可单方面进行物理删除或物理下架。</strong>
+                  {tSafe('profile.upload_agree_text', '我已认真阅读并自愿同意签署')} <span onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsCreatorAgreementOpen(true); }} className="text-echo-primary hover:text-echo-primary-hover hover:underline font-bold cursor-pointer transition-colors">{tSafe('profile.upload_agree_link', '《极声音乐创作者原创作品上传与收益分配协议》')}</span>{tSafe('profile.upload_agree_notice', '我明确知悉并同意本协议第三条：作品一经发布，即自动进入听众分账及权益共创流通，因涉及多方既得财产安全，作品将永久存续在平台中，创作者不可单方面进行物理删除或物理下架。')}
                 </label>
               </div>
 
@@ -3412,7 +3414,7 @@ function ProfileContent() {
                   disabled={loading}
                   className="flex-1 py-4 rounded-2xl bg-white/5 text-gray-400 font-bold hover:bg-white/10 transition-all"
                 >
-                  取消
+                  {tSafe('profile.upload_cancel', '取消')}
                 </button>
                 <button 
                   type="submit" 
@@ -3422,20 +3424,20 @@ function ProfileContent() {
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      正在加密发布中...
+                      {tSafe('profile.upload_submitting', '正在加密发布中...')}
                     </>
                   ) : isCompressing ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      声码优化压缩中...
+                      {tSafe('profile.upload_compressing', '声码优化压缩中...')}
                     </>
                   ) : !agreedToCreatorAgreement ? (
                     <>
                       <Lock className="w-4 h-4 mr-1 text-black/50" />
-                      请先同意签署创作者协议
+                      {tSafe('profile.upload_agree_first', '请先同意签署创作者协议')}
                     </>
                   ) : (
-                    '正式发布作品'
+                    tSafe('profile.upload_submit', '正式发布作品')
                   )}
                 </button>
               </div>
@@ -3454,7 +3456,7 @@ function ProfileContent() {
             <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6 shrink-0">
               <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-echo-primary" />
-                极声音乐创作者原创作品上传与收益分配协议
+                {tSafe('profile.upload_creator_agreement_title', '极声音乐创作者原创作品上传与收益分配协议')}
               </h2>
               <button 
                 type="button"
@@ -3468,72 +3470,72 @@ function ProfileContent() {
             {/* Scrollable Terms Content */}
             <div className="flex-1 overflow-y-auto pr-2 space-y-5 text-xs text-gray-300 leading-relaxed custom-scrollbar">
               <div className="p-3 bg-echo-primary/10 border border-echo-primary/20 rounded-xl mb-4">
-                <p className="text-echo-primary font-bold">重要提示：</p>
+                <p className="text-echo-primary font-bold">{tSafe('profile.agreement_notice_title', '重要提示：')}</p>
                 <p className="mt-1 text-[11px] leading-normal text-gray-300">
-                  本协议是极声音乐（ECHORURA）平台与创作者之间关于原创作品上传、流通及收益分配的法律协议。<strong>在您勾选同意或上传作品前，请务必仔细阅读本协议，特别是第三条中关于作品“不可下架”与“不可删除”的重要声明。</strong>
+                  {tSafe('profile.agreement_notice_body', '本协议是极声音乐（ECHORURA）平台与创作者之间关于原创作品上传、流通及收益分配的法律协议。在您勾选同意或上传作品前，请务必仔细阅读本协议，特别是第三条中关于作品“不可下架”与“不可删除”的重要声明。')}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-white mb-1.5 text-sm">第一条：引言与共识基础</h4>
+                <h4 className="font-bold text-white mb-1.5 text-sm">{tSafe('profile.agreement_sec1_title', '第一条：引言与共识基础')}</h4>
                 <p>
-                  极声音乐是一个基于 Web3 共享经济与去中心化理念构建的音乐分发与价值共创平台。创作者在此上传、发布歌曲，即代表自愿将作品接入极声音乐的“听审竞技场（Curation Arena）”及“版权共创 Sound Equity 机制”，与听众、伯乐分享数字红利，共同打造公平、透明、自治的音乐创作新生态。
+                  {tSafe('profile.agreement_sec1_body', '极声音乐是一个基于 Web3 共享经济与去中心化理念构建的音乐分发与价值共创平台。创作者在此上传、发布歌曲，即代表自愿将作品接入极声音乐的“听审竞技场（Curation Arena）”及“版权共创 Sound Equity 机制”，与听众、伯乐分享数字红利，共同打造公平、透明、自治的音乐创作新生态。')}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-white mb-1.5 text-sm">第二条：版权归属与非独占授权</h4>
+                <h4 className="font-bold text-white mb-1.5 text-sm">{tSafe('profile.agreement_sec2_title', '第二条：版权归属与非独占授权')}</h4>
                 <p>
-                  创作者对其在平台上传的作品拥有 100% 原始著作权。创作者仅非独占性、全球性、无偿地授予极声音乐在平台内传播、播放、缓存、生成动态推荐分享卡片及通过听歌挖矿分发给听众进行流媒体播放的权利。
+                  {tSafe('profile.agreement_sec2_body', '创作者对其在平台上传的作品拥有 100% 原始著作权。创作者仅非独占性、全球性、无偿地授予极声音乐在平台内传播、播放、缓存、生成动态推荐分享卡片及通过听歌挖矿分发给听众进行流媒体播放的权利。')}
                 </p>
               </div>
 
               <div className="p-4 bg-red-950/20 border border-red-500/20 rounded-xl space-y-2">
                 <h4 className="font-bold text-red-400 text-sm flex items-center gap-1.5">
                   <ShieldAlert className="w-4 h-4 text-red-400" />
-                  第三条：🚫 作品不可下架与不可删除声明 (Immutability Clause)
+                  {tSafe('profile.agreement_sec3_title', '第三条：🚫 作品不可下架与不可删除声明 (Immutability Clause)')}
                 </h4>
                 <p className="text-[11px] leading-normal text-red-300">
-                  极声音乐采用链上数据锚定与注意力挖矿机制。创作者一旦上传作品并成功发布：
+                  {tSafe('profile.agreement_sec3_body1', '极声音乐采用链上数据锚定与注意力挖矿机制。创作者一旦上传作品并成功发布：')}
                 </p>
                 <ul className="list-disc pl-4 space-y-1.5 text-[11px] text-gray-300">
                   <li>
-                    作品将立即与听众的“听歌挖矿收益”产生绑定。听众因播放、投票或发掘作品所产生的收益，在数据库中具有强一致性与金融资产属性。
+                    {tSafe('profile.agreement_sec3_bullet1', '作品将立即与听众的“听歌挖矿收益”产生绑定。听众因播放、投票或发掘作品所产生的收益，在数据库中具有强一致性与金融资产属性。')}
                   </li>
                   <li>
-                    如作品开启 Sound Equity 权益共创，投资者（听众）基于对作品的认购已持有作品的“版权份额”。该份额代表真实的未来收益分红权，属于投资者的合规资产。
+                    {tSafe('profile.agreement_sec3_bullet2', '如作品开启 Sound Equity 权益共创，投资者（听众）基于对作品的认购已持有作品的“版权份额”。该份额代表真实的未来收益分红权，属于投资者的合规资产。')}
                   </li>
                   <li>
-                    <strong className="text-white">【非物理下架规定】</strong> <strong>为保障全体共创听众及投资人的既得资产安全，极声音乐不提供单方面物理下架或物理删除作品的功能。</strong> 作品一经成功上传，其音频指纹、源文件 Hash 及版权池数据将永久存续在极声音乐体系中，创作者终身放弃针对已关联资产的作品执行物理下架或物理删除的权利。
+                    <strong className="text-white">{tSafe('profile.agreement_sec3_bullet3', '【非物理下架规定】 为保障全体共创听众及投资人的既得资产安全，极声音乐不提供单方面物理下架或物理删除作品的功能。 作品一经成功上传，其音频指纹、源文件 Hash 及版权池数据将永久存续在极声音乐体系中，创作者终身放弃针对已关联资产的作品执行物理下架或物理删除的权利。')}</strong>
                   </li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-bold text-white mb-1.5 text-sm">第四条：Curation Arena 质押与打榜规则</h4>
+                <h4 className="font-bold text-white mb-1.5 text-sm">{tSafe('profile.agreement_sec4_title', '第四条：Curation Arena 质押与打榜规则')}</h4>
                 <p>
-                  创作者如选择“质押冲刺本日推荐榜”模式，需自愿质押 10.00 ECHO 作为听审保证金。平台遵循民主化听审规则。当作品在听众投票中获得的票数在前 10 名，即为挑战成功，作品将登上首页「本日推荐榜」并全额退回 10.00 ECHO 保证金。若挑战未进入前 10 名，保证金将被没收并全部作为伯乐红利自动分发给参与投票的听众。
+                  {tSafe('profile.agreement_sec4_body', '创作者如选择“质押冲刺本日推荐榜”模式，需自愿质押 10.00 ECHO 作为听审保证金。平台遵循民主化听审规则。当作品在听众投票中获得的票数在前 10 名，即为挑战成功，作品将登上首页「本日推荐榜」并全额退回 10.00 ECHO 保证金。若挑战未进入前 10 名，保证金将被没收并全部作为伯乐红利自动分发给参与投票的听众。')}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-white mb-1.5 text-sm">第五条：收益分割与版税分润</h4>
+                <h4 className="font-bold text-white mb-1.5 text-sm">{tSafe('profile.agreement_sec5_title', '第五条：收益分割与版税分润')}</h4>
                 <p>
-                  当作品开启共创 IPO 认购后，听歌挖矿产生的全部 ECHO 收益将以“30% 听众流媒体挖矿”和“70% 权益池认购分红”进行透明分配。创作者通过认购与保留份额，按比例在数据库事务中获得秒级实时分润，双方严格遵守平台的智能计算共识。
+                  {tSafe('profile.agreement_sec5_body', '当作品开启共创 IPO 认购后，听歌挖矿产生的全部 ECHO 收益将以“30% 听众流媒体挖矿”和“70% 权益池认购分红”进行透明分配。创作者通过认购与保留份额，按比例在数据库事务中获得秒级实时分润，双方严格遵守平台的智能计算共识。')}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-white mb-1.5 text-sm">第六条：原创性保证与侵权处罚</h4>
+                <h4 className="font-bold text-white mb-1.5 text-sm">{tSafe('profile.agreement_sec6_title', '第六条：原创性保证与侵权处罚')}</h4>
                 <p>
-                  创作者声明并担保所上传作品完全为原创或已依法获得完整的商业授权。如发生任何涉及侵犯第三方权益的纠纷，创作者须独立承担全部法律责任，平台免责。如平台收到合理的侵权指控，为保护平台安全，有权在不通知的前提下对该作品执行“听歌屏蔽”或“暂停收益分配”等保全措施。
+                  {tSafe('profile.agreement_sec6_body', '创作者声明并担保所上传作品完全为原创或已依法获得完整的商业授权。如发生任何涉及侵犯第三方权益的纠纷，创作者须独立承担全部法律责任，平台免责。如平台收到合理的侵权指控，为保护平台安全，有权在不通知的前提下对该作品执行“听歌屏蔽”或“暂停收益分配”等保全措施。')}
                 </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-white mb-1.5 text-sm">第七条：反作弊审计</h4>
+                <h4 className="font-bold text-white mb-1.5 text-sm">{tSafe('profile.agreement_sec7_title', '第七条：反作弊审计')}</h4>
                 <p>
-                  极声音乐严格禁止利用机器人、多开账号、模拟器等任何作弊或刷量方式恶意侵占流媒体挖矿池。系统内置 AI 流量审计引擎。一经监测到虚假播放流量，平台有权冻结相关账户的所有收益，没收质押保证金，并执行作弊地址的永久限制访问。
+                  {tSafe('profile.agreement_sec7_body', '极声音乐严格禁止利用机器人、多开账号、模拟器等任何作弊或刷量方式恶意侵占流媒体挖矿池。系统内置 AI 流量审计引擎。一经监测到虚假播放流量，平台有权冻结相关账户的所有收益，没收质押保证金，并执行作弊地址的永久限制访问。')}
                 </p>
               </div>
             </div>
@@ -3545,7 +3547,7 @@ function ProfileContent() {
                 onClick={() => setIsCreatorAgreementOpen(false)}
                 className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 font-bold text-xs transition-all"
               >
-                关闭阅读
+                {tSafe('profile.agreement_close', '关闭阅读')}
               </button>
               <button
                 type="button"
@@ -3556,7 +3558,7 @@ function ProfileContent() {
                 className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-echo-primary to-echo-secondary text-black font-black text-xs hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-[0_0_20px_rgba(0,240,255,0.25)] animate-pulse"
               >
                 <ShieldCheck className="w-4 h-4" />
-                我自愿并同意签署此协议
+                {tSafe('profile.agreement_agree_btn', '我自愿并同意签署此协议')}
               </button>
             </div>
 
@@ -3568,12 +3570,12 @@ function ProfileContent() {
         <div className="fixed top-[132px] bottom-0 left-0 right-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => !loading && setIsEditingProfile(false)} />
           <div className="relative w-full max-w-md glass-panel rounded-3xl p-8 border border-white/10 shadow-2xl max-h-full overflow-y-auto z-10">
-            <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tighter">编辑个人资料</h2>
+            <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-tighter">{tSafe('profile.edit_profile_title', '编辑个人资料')}</h2>
             
             <form onSubmit={handleProfileUpdate} className="space-y-6">
               {/* Avatar Selection */}
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase mb-3 block">选择头像 (艺名形象)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-3 block">{tSafe('profile.edit_avatar_label', '选择头像 (艺名形象)')}</label>
                 <div className="grid grid-cols-4 gap-3 mb-4">
                   {PRESET_AVATARS.map((url) => (
                     <div 
@@ -3601,24 +3603,24 @@ function ProfileContent() {
 
               {/* Display Name */}
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">艺名 (Stage Name)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">{tSafe('profile.edit_stage_name', '艺名 (Stage Name)')}</label>
                 <input 
                   type="text" 
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   required
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-white focus:border-echo-primary/50 focus:outline-none"
-                  placeholder="输入你的舞台昵称..."
+                  placeholder={tSafe('profile.edit_stage_name_placeholder', '输入你的舞台昵称...')}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">个人简介 (Bio)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">{tSafe('profile.edit_bio', '个人简介 (Bio)')}</label>
                 <textarea 
                   value={editBio}
                   onChange={(e) => setEditBio(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-white focus:border-echo-primary/50 focus:outline-none custom-scrollbar min-h-[100px]"
-                  placeholder="用一段话向粉丝介绍一下你自己..."
+                  placeholder={tSafe('profile.edit_bio_placeholder', '用一段话向粉丝介绍一下你自己...')}
                   maxLength={500}
                 />
               </div>
@@ -3629,14 +3631,14 @@ function ProfileContent() {
                   onClick={() => setIsEditingProfile(false)}
                   className="flex-1 py-4 rounded-2xl bg-white/5 text-gray-400 font-bold hover:bg-white/10 transition-all"
                 >
-                  取消
+                  {tSafe('profile.edit_cancel', '取消')}
                 </button>
                 <button 
                   type="submit" 
                   disabled={loading}
                   className="flex-1 bg-echo-primary text-black font-black py-4 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : '保存更改'}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : tSafe('profile.edit_save', '保存更改')}
                 </button>
               </div>
             </form>
@@ -3645,10 +3647,10 @@ function ProfileContent() {
             <div className="mt-8 pt-6 border-t border-red-500/20 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <h3 className="text-red-500 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 animate-pulse" />
-                危险区域 (Danger Zone)
+                {tSafe('profile.edit_danger_zone', '危险区域 (Danger Zone)')}
               </h3>
               <p className="text-[10px] text-gray-500 mb-4 leading-relaxed">
-                注销账户是不可逆的操作。所有的个人隐私数据将按照香港《个人资料（私隐）条例》被彻底抹除。根据平台共享经济协定，您的已发行共创歌曲将被脱敏匿名保留以保障粉丝的权益。
+                {tSafe('profile.edit_danger_zone_desc', '注销账户是不可逆的操作。所有的个人隐私数据将按照香港《个人资料（私隐）条例》被彻底抹除。根据平台共享经济协定，您的已发行共创歌曲将被脱敏匿名保留以保障粉丝的权益。')}
               </p>
               <button
                 type="button"
@@ -3662,7 +3664,7 @@ function ProfileContent() {
                 className="w-full py-3 rounded-xl bg-red-950/30 border border-red-500/30 hover:bg-red-950/60 text-red-400 font-bold text-xs transition-all flex items-center justify-center gap-2 hover:border-red-500/50 cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.05)]"
               >
                 <Trash2 className="w-4 h-4" />
-                注销极声音乐账户
+                {tSafe('profile.edit_delete_account_btn', '注销极声音乐账户')}
               </button>
             </div>
           </div>

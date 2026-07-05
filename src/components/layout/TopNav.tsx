@@ -6,7 +6,7 @@ import { usePlayerStore } from '@/store/playerStore';
 import { useLanguageStore, translations } from '@/store/languageStore';
 import { createClient } from '@/utils/supabase/client';
 import AuthModal from '@/components/auth/AuthModal';
-import { LogOut, User as UserIcon, Search, Bell, Globe } from 'lucide-react';
+import { LogOut, User as UserIcon, Search, Bell, Globe, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function TopNav() {
@@ -163,15 +163,8 @@ export default function TopNav() {
                 )}
               </div>
 
-              <Link href="/wallet" className="glass-panel px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 sm:gap-2 hover:border-echo-primary/50 transition-colors cursor-pointer relative overflow-hidden group">
-                <div className="absolute inset-0 bg-echo-primary/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
-                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-echo-primary/20 flex items-center justify-center border border-echo-primary relative z-10">
-                  <span className="text-[9px] sm:text-[10px] text-echo-primary font-bold">E</span>
-                </div>
-                <span className="text-xs sm:text-sm font-bold text-white relative z-10 flex items-center gap-1">
-                  {echoBalance.toFixed(2)} 
-                  <span className="text-gray-400 text-[9px] sm:text-[10px] hidden sm:inline">ECHO</span>
-                </span>
+              <Link href="/wallet" className="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300 hover:text-echo-primary">
+                <Wallet className="w-5 h-5" />
               </Link>
               
               {user ? (
