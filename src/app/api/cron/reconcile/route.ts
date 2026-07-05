@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
     
     // 2. Initialize Supabase Admin Client
     const adminClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
     // 3. Find pending purchases with tx_hash that are older than 2 minutes

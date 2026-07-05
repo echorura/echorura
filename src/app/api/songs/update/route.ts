@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // 4. 用 service_role key 创建管理员客户端（完全绕过 RLS）
     const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
     // 5. 确认作品归属（防越权，用管理员客户端查询）

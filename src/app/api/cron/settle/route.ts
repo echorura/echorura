@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
 
     // 使用 adminClient 绕过 RLS 执行结算逻辑
     const adminClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
     // 1. 获取待结算的版权池收益 (按 song_id 汇总)，以便稍后进行链上分红注入

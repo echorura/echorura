@@ -30,7 +30,23 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError && (authError.message.includes('Refresh Token') || authError.message.includes('refresh_token'))) {
+      console.warn('[Auth Middleware] Invalid Refresh Token detected, clearing session cookies.');
+      const response = NextResponse.next({
+        request,
+      })
+      request.cookies.getAll().forEach(cookie => {
+        if (cookie.name.startsWith('sb-') || cookie.name.includes('auth-token')) {
+          response.cookies.delete(cookie.name)
+        }
+      })
+      return response;
+    }
+  } catch (err) {
+    console.error('[Auth Middleware] Exception during getUser check:', err);
+  }
 
   return supabaseResponse
 }

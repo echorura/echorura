@@ -3,18 +3,31 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePlayerStore } from '@/store/playerStore';
-import { useLanguageStore } from '@/store/languageStore';
+import { useLanguageStore, translations } from '@/store/languageStore';
 import { createClient } from '@/utils/supabase/client';
 import AuthModal from '@/components/auth/AuthModal';
-import { LogOut, User as UserIcon, Search, Bell } from 'lucide-react';
+import { LogOut, User as UserIcon, Search, Bell, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function TopNav() {
   const router = useRouter();
   const { echoBalance, earnedThisSession } = usePlayerStore();
   const { language, setLanguage, t } = useLanguageStore();
+  const [isMounted, setIsMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [showLangMenu, setShowLangMenu] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const tSafe = (key: string) => {
+    if (!isMounted) {
+      return translations[key]?.zh || key;
+    }
+    return t(key);
+  };
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -92,8 +105,8 @@ export default function TopNav() {
                 </div>
               </Link>
               <nav className="hidden md:flex space-x-8">
-                <Link href="/discover" className="text-gray-300 hover:text-echo-primary transition-colors text-sm font-bold uppercase">{t('nav.discover')}</Link>
-                <Link href="/community" className="text-gray-300 hover:text-echo-primary transition-colors text-sm font-bold uppercase">{t('nav.community')}</Link>
+                <Link href="/discover" className="text-gray-300 hover:text-echo-primary transition-colors text-sm font-bold uppercase">{tSafe('nav.discover')}</Link>
+                <Link href="/community" className="text-gray-300 hover:text-echo-primary transition-colors text-sm font-bold uppercase">{tSafe('nav.community')}</Link>
               </nav>
             </div>
 
@@ -103,6 +116,52 @@ export default function TopNav() {
               <Link href="/search" className="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300 hover:text-white">
                 <Search className="w-5 h-5" />
               </Link>
+
+              {/* Language Switcher */}
+              <div 
+                className="relative"
+                onMouseEnter={() => setShowLangMenu(true)}
+                onMouseLeave={() => setShowLangMenu(false)}
+              >
+                <button 
+                  onClick={() => setShowLangMenu(!showLangMenu)}
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300 hover:text-white flex items-center gap-1 cursor-pointer"
+                >
+                  <Globe className="w-4 h-4" />
+                  <span className="text-[10px] font-black uppercase tracking-wider">{isMounted ? language : 'zh'}</span>
+                </button>
+                {showLangMenu && (
+                  <div className="absolute right-0 mt-1 w-24 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl transition-all duration-200 z-50">
+                    <button 
+                      onClick={() => {
+                        setLanguage('zh');
+                        setShowLangMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-xs font-bold transition-colors cursor-pointer ${language === 'zh' ? 'text-echo-primary bg-white/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                      简体中文
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setLanguage('en');
+                        setShowLangMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-xs font-bold transition-colors cursor-pointer ${language === 'en' ? 'text-echo-primary bg-white/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                      English
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setLanguage('ja');
+                        setShowLangMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-xs font-bold transition-colors cursor-pointer ${language === 'ja' ? 'text-echo-primary bg-white/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                      日本語
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <Link href="/wallet" className="glass-panel px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 sm:gap-2 hover:border-echo-primary/50 transition-colors cursor-pointer relative overflow-hidden group">
                 <div className="absolute inset-0 bg-echo-primary/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
@@ -165,7 +224,7 @@ export default function TopNav() {
                   onClick={() => setIsAuthOpen(true)}
                   className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 px-4 rounded-full transition-all border border-white/10"
                 >
-                  {t('nav.login')}
+                  {tSafe('nav.login')}
                 </button>
               )}
             </div>

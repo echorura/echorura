@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     }
 
     const adminClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
     // 2. 获取东八区北京时间 (Asia/Shanghai) 的当前日期 YYYY-MM-DD

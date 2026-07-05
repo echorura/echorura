@@ -415,21 +415,34 @@ export default function AssetHubPage() {
 
         // 2. 从数据库拉取真实的版权股份 (equities 表)
         try {
-          const { data: dbEquities, error: equitiesError } = await supabase
+          const { data: rawEquities, error: equitiesError } = await supabase
             .from('equities')
-            .select(`
-              song_id,
-              shares,
-              song:songs(
-                title,
-                artist,
-                cover_url
-              )
-            `)
+            .select('song_id, shares')
             .eq('user_id', user.id)
             .gt('shares', 0);
 
-          if (!equitiesError && dbEquities) {
+          if (!equitiesError && rawEquities) {
+            // 分步拉取歌曲详情，避免在没有显式外键的环境下触发 PGRST200
+            const songIds = rawEquities.map((eq: any) => eq.song_id).filter(Boolean);
+            let songMap = new Map();
+            if (songIds.length > 0) {
+              const { data: songsData, error: songsError } = await supabase
+                .from('songs')
+                .select('id, title, artist, cover_url')
+                .in('id', songIds);
+              if (!songsError && songsData) {
+                songMap = new Map(songsData.map((s: any) => [s.id, s]));
+              } else if (songsError) {
+                console.error('[Asset Hub Sync] Failed to fetch song details for equities:', songsError);
+              }
+            }
+
+            const dbEquities = rawEquities.map((eq: any) => ({
+              song_id: eq.song_id,
+              shares: eq.shares,
+              song: songMap.get(eq.song_id) || null
+            }));
+
             // 3. 拉取用户的版权分红记录计算各歌曲的累计收益
             const { data: dividendData } = await supabase
               .from('transactions')
@@ -484,21 +497,30 @@ export default function AssetHubPage() {
             // 如果有同步写入，我们需要重新拉取最新的数据库统计数据以保持完全精确
             if (needReFetch) {
               console.log('🔄 [Sync Engine] 正在拉取最新的云端同步数据...');
-              const { data: newDbEquities } = await supabase
+              const { data: newRawEquities } = await supabase
                 .from('equities')
-                .select(`
-                  song_id,
-                  shares,
-                  song:songs(
-                    title,
-                    artist,
-                    cover_url
-                  )
-                `)
+                .select('song_id, shares')
                 .eq('user_id', user.id)
                 .gt('shares', 0);
               
-              if (newDbEquities) {
+              if (newRawEquities) {
+                const newSongIds = newRawEquities.map((eq: any) => eq.song_id).filter(Boolean);
+                let newSongMap = new Map();
+                if (newSongIds.length > 0) {
+                  const { data: newSongsData } = await supabase
+                    .from('songs')
+                    .select('id, title, artist, cover_url')
+                    .in('id', newSongIds);
+                  if (newSongsData) {
+                    newSongMap = new Map(newSongsData.map((s: any) => [s.id, s]));
+                  }
+                }
+                const newDbEquities = newRawEquities.map((eq: any) => ({
+                  song_id: eq.song_id,
+                  shares: eq.shares,
+                  song: newSongMap.get(eq.song_id) || null
+                }));
+
                 dbEquities.length = 0;
                 dbEquities.push(...newDbEquities);
               }

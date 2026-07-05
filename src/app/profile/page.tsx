@@ -102,6 +102,25 @@ const compressImage = (file: File, maxWidth = 500, maxHeight = 500, quality = 0.
 
 function ProfileContent() {
   const { t } = useLanguageStore();
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const tSafe = (key: string, fallback: string) => {
+    if (!isMounted) return fallback;
+    return t(key);
+  };
+
+  const renderHelpText = (key: string, fallback: string) => {
+    let text = tSafe(key, fallback);
+    text = text.replace(/{token}/g, tSafe('compliance.token_' + activeConfig.region.toLowerCase(), '积分'));
+    text = text.replace(/{equity}/g, tSafe('compliance.equity_' + activeConfig.region.toLowerCase(), '版权股权'));
+    text = text.replace(/{fiatRate}/g, activeConfig.fiatExchangeRateText);
+    text = text.replace(/\n/g, '<br />');
+    return text;
+  };
+
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [mySongs, setMySongs] = useState<any[]>([]);
@@ -382,15 +401,26 @@ function ProfileContent() {
   useEffect(() => {
     let activeUserId: string | null = null;
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        activeUserId = user.id;
-        setUser(user);
-        fetchProfile(user.id);
-        fetchMySongs(user.id);
-        fetchMyFavorites(user.id);
-        fetchMyFollows(user.id);
-        fetchMyPlaylists(user.id);
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError && (authError.message.includes('Refresh Token') || authError.message.includes('refresh_token'))) {
+          console.warn('[Profile Page] Invalid refresh token detected, signing out to reset session.');
+          await supabase.auth.signOut();
+          window.location.reload();
+          return;
+        }
+
+        if (user) {
+          activeUserId = user.id;
+          setUser(user);
+          fetchProfile(user.id);
+          fetchMySongs(user.id);
+          fetchMyFavorites(user.id);
+          fetchMyFollows(user.id);
+          fetchMyPlaylists(user.id);
+        }
+      } catch (err) {
+        console.error('[Profile Page] Exception in init:', err);
       }
     };
     init();
@@ -2027,18 +2057,18 @@ function ProfileContent() {
           <div className="glass-panel p-6 rounded-3xl border border-white/10 space-y-4 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-echo-primary to-transparent opacity-30"></div>
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-              <Share2 className="w-4 h-4 text-echo-primary" /> 专属社交裂变奖励
+              <Share2 className="w-4 h-4 text-echo-primary" /> {tSafe('profile.social_rewards_title', '专属社交裂变奖励')}
             </h3>
             
             <div className="space-y-3">
               <p className="text-xs text-gray-400 leading-relaxed">
-                分享您的专属邀请码给好友，好友在注册时填写此码。注册成功后，新成员可得 <span className="text-echo-primary font-black">10 ECHO</span> 新人礼包，您将获得 <span className="text-echo-primary font-black">5.00 ECHO</span> 邀请人分润奖励，秒级发放到账！
+                {tSafe('profile.social_rewards_desc', '分享您的专属邀请码给好友，好友在注册时填写此码。注册成功后，新成员可得 10 ECHO 新人礼包，您将获得 5.00 ECHO 邀请人分润奖励，秒级发放到账！')}
               </p>
               
               <div className="flex gap-2">
                 <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm font-mono font-bold flex items-center justify-between overflow-hidden">
                   <span className="truncate">{profile?.display_name || user?.email?.split('@')[0] || user?.phone || 'ECHORURA_User'}</span>
-                  <span className="text-[10px] bg-echo-primary/10 text-echo-primary px-2 py-0.5 rounded uppercase font-sans shrink-0 ml-2">我的邀请码</span>
+                  <span className="text-[10px] bg-echo-primary/10 text-echo-primary px-2 py-0.5 rounded uppercase font-sans shrink-0 ml-2">{tSafe('profile.my_invite_code', '我的邀请码')}</span>
                 </div>
                 
                 <button
@@ -2048,7 +2078,7 @@ function ProfileContent() {
                       ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' 
                       : 'bg-echo-primary hover:bg-echo-primary/80 text-black shadow-lg shadow-echo-primary/20 hover:scale-[1.02]'
                   }`}
-                  title="复制邀请码"
+                  title={tSafe('profile.copy_invite_code', '复制邀请码')}
                 >
                   {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                 </button>
@@ -2059,12 +2089,12 @@ function ProfileContent() {
                 className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-echo-secondary via-echo-primary to-echo-secondary text-black font-black text-sm hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,240,255,0.25)] mt-2"
               >
                 <Share2 className="w-4 h-4 text-black" />
-                <span>{copiedArtistLink ? '已复制创作者主页链接！' : '推广分享我的创作者主页'}</span>
+                <span>{copiedArtistLink ? tSafe('profile.artist_link_copied', '已复制创作者主页链接！') : tSafe('profile.share_artist_page', '推广分享我的创作者主页')}</span>
               </button>
               
               <p className="text-[10px] text-gray-500 leading-normal bg-white/5 p-3 rounded-xl border border-white/5 flex gap-1.5 items-start mt-2">
                 <span className="text-echo-primary mt-0.5">💡</span>
-                <span>规则说明：邀请好友注册属于社区共创增长计划。每次成功邀请，奖励将以 🟢已结算 形式实时入账，可用于市集认购歌曲版权或在擂台质押！</span>
+                <span>{tSafe('profile.social_rewards_rule', '规则说明：邀请好友注册属于社区共创增长计划。每次成功邀请，奖励将以 🟢已结算 形式实时入账，可用于市集认购歌曲版权或在擂台质押！')}</span>
               </p>
             </div>
           </div>
@@ -2072,7 +2102,7 @@ function ProfileContent() {
           {/* 账户安全管理 Card */}
           <div className="glass-panel p-6 rounded-3xl border border-white/10 space-y-4">
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-              <Lock className="w-4 h-4 text-echo-primary" /> 账户安全管理
+              <Lock className="w-4 h-4 text-echo-primary" /> {tSafe('profile.security_mgmt', '账户安全管理')}
             </h3>
             <div className="space-y-3">
               <button 
@@ -2080,7 +2110,7 @@ function ProfileContent() {
                 className="w-full py-3 px-4 rounded-2xl bg-white/5 hover:bg-white/10 hover:text-echo-primary transition-all text-sm font-bold text-gray-300 flex items-center justify-between group border border-white/5"
               >
                 <span className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-gray-400 group-hover:text-echo-primary transition-colors" /> 修改账户密码
+                  <Lock className="w-4 h-4 text-gray-400 group-hover:text-echo-primary transition-colors" /> {tSafe('profile.change_pwd', '修改账户密码')}
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-echo-primary transition-colors" />
               </button>
@@ -2090,7 +2120,7 @@ function ProfileContent() {
                 className="w-full py-3 px-4 rounded-2xl bg-white/5 hover:bg-white/10 hover:text-echo-primary transition-all text-sm font-bold text-gray-300 flex items-center justify-between group border border-white/5"
               >
                 <span className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-gray-400 group-hover:text-echo-primary transition-colors" /> 意见与问题反馈
+                  <Info className="w-4 h-4 text-gray-400 group-hover:text-echo-primary transition-colors" /> {tSafe('profile.feedback_support', '意见与问题反馈')}
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-echo-primary transition-colors" />
               </button>
@@ -2099,7 +2129,7 @@ function ProfileContent() {
                 onClick={handleSignOut}
                 className="w-full py-3 px-4 rounded-2xl bg-red-500/10 hover:bg-red-500 hover:text-white transition-all text-sm font-bold text-red-400 flex items-center justify-between group border border-red-500/20"
               >
-                <span>退出当前登录</span>
+                <span>{tSafe('profile.logout', '退出当前登录')}</span>
                 <ChevronRight className="w-4 h-4 text-red-400 group-hover:text-white transition-colors" />
               </button>
             </div>
@@ -2356,7 +2386,7 @@ function ProfileContent() {
 
           {/* Help & Support Navigation Card (Moved below My Creations) */}
           <div className="glass-panel p-6 rounded-3xl border border-white/10 space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">系统与支持 (Support)</h3>
+            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">{tSafe('profile.system_support', '系统与支持 (Support)')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button 
                 onClick={() => {
@@ -2370,8 +2400,8 @@ function ProfileContent() {
                     <Info className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-white text-sm font-bold">使用指南 & 帮助中心</p>
-                    <p className="text-[10px] text-gray-500 mt-0.5">如何玩转极声音乐</p>
+                    <p className="text-white text-sm font-bold">{tSafe('profile.guide_help_center', '使用指南 & 帮助中心')}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{tSafe('profile.how_to_play', '如何玩转极声音乐')}</p>
                   </div>
                 </div>
                 <div className="w-2 h-2 rounded-full bg-echo-primary shrink-0"></div>
@@ -2386,8 +2416,8 @@ function ProfileContent() {
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-white text-sm font-bold">关于我们 & 合规说明</p>
-                    <p className="text-[10px] text-gray-500 mt-0.5">使命愿景与架构公示</p>
+                    <p className="text-white text-sm font-bold">{tSafe('profile.about_compliance', '关于我们 & 合规说明')}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{tSafe('profile.mission_architecture', '使命愿景与架构公示')}</p>
                   </div>
                 </div>
                 <div className="w-2 h-2 rounded-full bg-echo-secondary shrink-0"></div>
@@ -3860,15 +3890,15 @@ function ProfileContent() {
                   <Info className="w-6 h-6 animate-pulse" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter">极声帮助中心 (Help Center)</h2>
-                  <p className="text-xs text-gray-500 uppercase tracking-widest mt-0.5">Platform FAQ & Creator Guide</p>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{tSafe('profile.help_center_title', '极声帮助中心 (Help Center)')}</h2>
+                  <p className="text-xs text-gray-500 uppercase tracking-widest mt-0.5">{tSafe('profile.help_center_subtitle', 'Platform FAQ & Creator Guide')}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsHelpModalOpen(false)}
                 className="py-2 px-4 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 text-xs transition-colors cursor-pointer"
               >
-                关闭
+                {tSafe('profile.close_faq', '关闭')}
               </button>
             </div>
 
@@ -3880,25 +3910,25 @@ function ProfileContent() {
                   onClick={() => setActiveFaqTab('guide')}
                   className={`py-3 px-4 rounded-xl text-xs font-bold text-left whitespace-nowrap cursor-pointer transition-all ${activeFaqTab === 'guide' ? 'bg-echo-primary text-black' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                 >
-                  🚀 平台使用指南
+                  {tSafe('profile.tab_guide', '🚀 平台使用指南')}
                 </button>
                 <button
                   onClick={() => setActiveFaqTab('credits')}
                   className={`py-3 px-4 rounded-xl text-xs font-bold text-left whitespace-nowrap cursor-pointer transition-all ${activeFaqTab === 'credits' ? 'bg-echo-primary text-black' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                 >
-                  🪙 {t('compliance.token_' + activeConfig.region.toLowerCase())}获取
+                  {tSafe('profile.tab_credits', '🪙 {token}获取').replace('{token}', tSafe('compliance.token_' + activeConfig.region.toLowerCase(), '积分'))}
                 </button>
                 <button
                   onClick={() => setActiveFaqTab('equity')}
                   className={`py-3 px-4 rounded-xl text-xs font-bold text-left whitespace-nowrap cursor-pointer transition-all ${activeFaqTab === 'equity' ? 'bg-echo-primary text-black' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                 >
-                  🎼 {t('compliance.equity_' + activeConfig.region.toLowerCase())}
+                  {tSafe('profile.tab_equity', '🎼 {equity}').replace('{equity}', tSafe('compliance.equity_' + activeConfig.region.toLowerCase(), '版权股权'))}
                 </button>
                 <button
                   onClick={() => setActiveFaqTab('arena')}
                   className={`py-3 px-4 rounded-xl text-xs font-bold text-left whitespace-nowrap cursor-pointer transition-all ${activeFaqTab === 'arena' ? 'bg-echo-primary text-black' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
                 >
-                  🏆 听审竞技场机制
+                  {tSafe('profile.tab_arena', '🏆 听审竞技场机制')}
                 </button>
               </div>
 
@@ -3908,39 +3938,29 @@ function ProfileContent() {
                   <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <h3 className="text-white font-bold text-sm flex items-center gap-2">
                       <span className="w-1.5 h-3 bg-echo-primary rounded-full"></span>
-                      极声音乐快速上手指南 (ECHORURA Platform Guide)
+                      {renderHelpText('profile.guide_title', '极声音乐快速上手指南 (ECHORURA Platform Guide)')}
                     </h3>
-                    <p className="text-gray-400">
-                      欢迎来到极声音乐！本平台采用去中心化的共享共创模型，为乐迷和创作者构建起无中介的价值链接。以下是核心使用方法：
-                    </p>
+                    <p className="text-gray-400" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.guide_desc', '欢迎来到极声音乐！本平台采用去中心化的共享共创模型，为乐迷和创作者构建起无中介的价值链接。以下是核心使用方法：') }} />
 
                     <div className="space-y-3">
                       <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5">
-                        <h4 className="font-bold text-white mb-1">第一步：加入平台与获取初始积分</h4>
-                        <p className="text-[11px] text-gray-500">
-                          注册并登录极声账户后，系统会自动为你建立去中心化标识。你可通过完成日常活动（如收听、打榜、签到等）轻松积累创作者初始的 <strong>{t('compliance.token_' + activeConfig.region.toLowerCase())}</strong>，或通过充值入口划转所需积分。
-                        </p>
+                        <h4 className="font-bold text-white mb-1">{renderHelpText('profile.guide_step1_title', '第一步：加入平台与获取初始积分')}</h4>
+                        <p className="text-[11px] text-gray-500" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.guide_step1_desc', '注册并登录极声账户后，系统会自动为你建立去中心化标识。你可通过完成日常活动（如收听、打榜、签到等）轻松积累创作者初始的 <strong>{t(\'compliance.token_\' + activeConfig.region.toLowerCase())}</strong>，或通过充值入口划转所需积分。') }} />
                       </div>
 
                       <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5">
-                        <h4 className="font-bold text-white mb-1">第二步：参与优秀歌曲的“共创共享”</h4>
-                        <p className="text-[11px] text-gray-500">
-                          在“共创市场 (Studio/Market)”中，优秀创作者在发布新歌时通常会拿出一部分（如 50%）的 <strong>{t('compliance.equity_' + activeConfig.region.toLowerCase())}</strong> 进行社区发行。你可以使用 <strong>{t('compliance.token_' + activeConfig.region.toLowerCase())}</strong> 认购这些份额，成为这首歌曲的社区“共创合伙人”。
-                        </p>
+                        <h4 className="font-bold text-white mb-1">{renderHelpText('profile.guide_step2_title', '第二步：参与优秀歌曲的“共创共享”')}</h4>
+                        <p className="text-[11px] text-gray-500" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.guide_step2_desc', '在“共创市场 (Studio/Market)”中，优秀创作者在发布新歌时通常会拿出一部分（如 50%）的 <strong>{t(\'compliance.equity_\' + activeConfig.region.toLowerCase())}</strong> 进行社区发行。你可以使用 <strong>{t(\'compliance.token_\' + activeConfig.region.toLowerCase())}</strong> 认购这些份额，成为这首歌曲的社区“共创合伙人”。') }} />
                       </div>
 
                       <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5">
-                        <h4 className="font-bold text-white mb-1">第三步：歌曲播放，全自动分红共享</h4>
-                        <p className="text-[11px] text-gray-500">
-                          一旦该歌曲在平台被乐迷播放，其产生的播放收益将触发<strong>去中心化分配协议</strong>，按秒自动分红。其中 30% 分配给当前收听的乐迷，另外 70% 分配给持有这首歌的全体“权益持有人”（包括你和创作者本身）。
-                        </p>
+                        <h4 className="font-bold text-white mb-1">{renderHelpText('profile.guide_step3_title', '第三步：歌曲播放，全自动分红共享')}</h4>
+                        <p className="text-[11px] text-gray-500" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.guide_step3_desc', '一旦该歌曲在平台被乐迷播放，其产生的播放收益将触发<strong>去中心化分配协议</strong>，按秒自动分红。其中 30% 分配给当前收听的乐迷，另外 70% 分配给持有这首歌的全体“权益持有人”（包括你和创作者本身）。') }} />
                       </div>
 
                       <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5">
-                        <h4 className="font-bold text-white mb-1">第四步：创作者发布作品与竞技打榜</h4>
-                        <p className="text-[11px] text-gray-500">
-                          如果你是创作者，可以直接上传作品。为了能让歌曲直接登上首页“本日推荐榜”获得爆光，建议使用 10 ECHO 积分参与“去中心化听审竞技场”，通过大众投票赢取返还和超级推广资源。
-                        </p>
+                        <h4 className="font-bold text-white mb-1">{renderHelpText('profile.guide_step4_title', '第四步：创作者发布作品与竞技打榜')}</h4>
+                        <p className="text-[11px] text-gray-500" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.guide_step4_desc', '如果你是创作者，可以直接上传作品。为了能让歌曲直接登上首页“本日推荐榜”获得曝光，建议使用 10 ECHO 积分参与“去中心化听审竞技场”，通过大众投票赢取返还和超级推广资源。') }} />
                       </div>
                     </div>
                   </div>
@@ -3950,36 +3970,28 @@ function ProfileContent() {
                   <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <h3 className="text-white font-bold text-sm flex items-center gap-2">
                       <span className="w-1.5 h-3 bg-echo-primary rounded-full"></span>
-                      如何获取与使用 {t('compliance.token_' + activeConfig.region.toLowerCase())}？
+                      {renderHelpText('profile.credits_title', '如何获取与使用 {token}？')}
                     </h3>
                     
                     <div className="space-y-4 font-mono">
                       <div>
-                        <h4 className="font-bold text-gray-300">Q: 什么是 {t('compliance.token_' + activeConfig.region.toLowerCase())}？</h4>
-                        <p className="mt-1 text-gray-400">
-                          这是极声去中心化社区中唯一流转的系统积分凭证。可用于认购歌曲的<strong>{t('compliance.equity_' + activeConfig.region.toLowerCase())}</strong>、给喜欢的作品打榜投票、打赏创作者，或者充值和划转。
-                        </p>
+                        <h4 className="font-bold text-gray-300">{renderHelpText('profile.credits_q1', 'Q: 什么是 {token}？')}</h4>
+                        <p className="mt-1 text-gray-400" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.credits_a1', '这是极声去中心化社区中唯一流转的系统积分凭证。可用于认购歌曲的<strong>{t(\'compliance.equity_\' + activeConfig.region.toLowerCase())}</strong>、给喜欢的作品打榜投票、打赏创作者，或者充值和划转。') }} />
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-gray-300">Q: 如何免费“听歌挖矿”获取积分？</h4>
-                        <p className="mt-1 text-gray-400">
-                          当你在极声音乐收听任何歌曲时，每一次播放产生的收益，都会分出 30% 作为<strong>聆听激励</strong>当即返还到你的平台账户。也就是说，听歌即可持续产生积分！
-                        </p>
+                        <h4 className="font-bold text-gray-300">{renderHelpText('profile.credits_q2', 'Q: 如何免费“听歌挖矿”获取积分？')}</h4>
+                        <p className="mt-1 text-gray-400" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.credits_a2', '当你在极声音乐收听任何歌曲时，每一次播放产生的收益，都会分出 30% 作为<strong>聆听激励</strong>当即返还到你的平台账户。也就是说，听歌即可持续产生积分！') }} />
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-gray-300">Q: 创作者有什么免费获取途径？</h4>
-                        <p className="mt-1 text-gray-400">
-                          每当创作者成功发布一首原创歌曲，平台会自动派发 <strong>1.00 ECHO 积分</strong> 的普通发布补贴，鼓励持续创作。
-                        </p>
+                        <h4 className="font-bold text-gray-300">{renderHelpText('profile.credits_q3', 'Q: 创作者有什么免费获取途径？')}</h4>
+                        <p className="mt-1 text-gray-400" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.credits_a3', '每当创作者成功发布一首原创歌曲，平台会自动派发 <strong>1.00 ECHO 积分</strong> 的普通发布补贴，鼓励持续创作。') }} />
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-gray-300">Q: 支持法币充值吗？</h4>
-                        <p className="mt-1 text-gray-400">
-                          支持。极声对接了安全的法币（如港币 HKD / 美元 USD）积分充值接口，可在个人账户余额处点击充值，按照约 {activeConfig.fiatExchangeRateText} 的固定兑换比例一键购入。
-                        </p>
+                        <h4 className="font-bold text-gray-300">{renderHelpText('profile.credits_q4', 'Q: 支持法币充值吗？')}</h4>
+                        <p className="mt-1 text-gray-400" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.credits_a4', '支持。极声对接了安全的法币（如港币 HKD / 美元 USD）积分充值接口，可在个人账户余额处点击充值，按照约 {activeConfig.fiatExchangeRateText} 的固定兑换比例一键购入。') }} />
                       </div>
                     </div>
                   </div>
@@ -3989,30 +4001,20 @@ function ProfileContent() {
                   <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <h3 className="text-white font-bold text-sm flex items-center gap-2">
                       <span className="w-1.5 h-3 bg-echo-primary rounded-full"></span>
-                      理解“{t('compliance.equity_' + activeConfig.region.toLowerCase())}”分成机制
+                      {renderHelpText('profile.equity_title', '理解“{equity}”分成机制')}
                     </h3>
 
                     <div className="space-y-4">
-                      <p>
-                        极声倡导的是“共创共享”的音乐共享经济理念。每一首发布的优秀歌曲都不再专属于创作者一人，而是属于所有支持过它的社区粉丝。
-                      </p>
+                      <p dangerouslySetInnerHTML={{ __html: renderHelpText('profile.equity_desc', '极声倡导的是“共创共享”的音乐共享经济理念。每一首发布的优秀歌曲都不再专属于创作者一人，而是属于所有支持过它的社区粉丝。') }} />
 
                       <div className="bg-black/20 p-3.5 rounded-xl border border-white/5 space-y-2">
-                        <h4 className="font-bold text-white text-[11px] uppercase">1. 什么是共创认购 (Music IPO)？</h4>
-                        <p className="text-gray-500">
-                          创作者在上架歌曲时，可开启“歌曲共创”并设定发行总份额。例如：设定总权益 1000 份，出售 50%。乐迷们可以使用积分进行认购，这些购买积分将划转给创作者，用于补贴前期的音乐制作成本。
-                        </p>
+                        <h4 className="font-bold text-white text-[11px] uppercase">{renderHelpText('profile.equity_section1_title', '1. 什么是共创认购 (Music IPO)？')}</h4>
+                        <p className="text-gray-500" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.equity_section1_desc', '创作者在上架歌曲时，可开启“歌曲共创”并设定发行总份额。例如：设定总权益 1000 份，出售 50%。乐迷们可以使用积分进行认购，这些购买积分将划转给创作者，用于补贴前期的音乐制作成本。') }} />
                       </div>
 
                       <div className="bg-black/20 p-3.5 rounded-xl border border-white/5 space-y-2">
-                        <h4 className="font-bold text-white text-[11px] uppercase">2. 分红是如何自动分配的？</h4>
-                        <p className="text-gray-500">
-                          当用户在线播放这首歌时，单次收听产生的平台总收益池中：
-                          <br />
-                          • <strong>30%</strong> 直接作为“收听奖励”到账给收听的这位乐迷；
-                          <br />
-                          • <strong>70%</strong> 作为“共创分红收益”注入这首歌的歌曲公共收益池，并按照全体权益人的持股比例，全自动发放到账！即使原作者离线或注销，这笔收益依然会永久有效。
-                        </p>
+                        <h4 className="font-bold text-white text-[11px] uppercase">{renderHelpText('profile.equity_section2_title', '2. 分红是如何自动分配的？')}</h4>
+                        <p className="text-gray-500" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.equity_section2_desc', '当用户在线播放这首歌时，单次收听产生的平台总收益池中：\n• <strong>30%</strong> 直接作为“收听奖励”到账给收听的这位乐迷；\n• <strong>70%</strong> 作为“共创分红收益”注入这首歌的歌曲公共收益池，并按照全体权益人的持股比例，全自动发放到账！即使原作者离线或注销，这笔收益依然会永久有效。') }} />
                       </div>
                     </div>
                   </div>
@@ -4022,40 +4024,18 @@ function ProfileContent() {
                   <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <h3 className="text-white font-bold text-sm flex items-center gap-2">
                       <span className="w-1.5 h-3 bg-echo-primary rounded-full"></span>
-                      什么是“三日循环竞技赛制”？
+                      {renderHelpText('profile.arena_title', '什么是“三日循环竞技赛制”？')}
                     </h3>
 
                     <div className="space-y-4 font-mono text-[11px]">
                       <div>
-                        <h4 className="font-bold text-gray-300">Q: 什么是“听审竞技场”的三日运转周期？</h4>
-                        <p className="mt-1 text-gray-400">
-                          为提升打榜含金量，极声设计了滚动式的**“三日周期竞争淘汰制”**：
-                          <br />
-                          • <strong>第一天：报名期 (Registration Day)</strong> — 开放打榜报名，创作者可通过质押 10.00 ECHO 发起打榜申请。<strong>每日名额仅限 20 首</strong>，满额即关闭报名通道。
-                          <br />
-                          • <strong>第二天：听审期 (Voting Day)</strong> — 报名曲目锁定，进入盲听分发池。社区用户（听审员）在此阶段进行试听并投下 Upvote（支持）或 Down（下沉）选票，系统实时排序计算排名。
-                          <br />
-                          • <strong>第三天：公示榜单期 (Showcase Day)</strong> — 投票截止。胜出的优秀作品将正式登上极声主页黄金曝光位 <strong>“今日推荐榜”</strong>！
-                        </p>
+                        <h4 className="font-bold text-gray-300">{renderHelpText('profile.arena_q1', 'Q: 什么是“听审竞技场”的三日运转周期？')}</h4>
+                        <p className="mt-1 text-gray-400" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.arena_a1', '为提升打榜含金量，极声设计了滚动式的**“三日周期竞争淘汰制”**：\n• <strong>第一天：报名期 (Registration Day)</strong> — 开放打榜报名，创作者可通过质押 10.00 ECHO 发起打榜申请。<strong>每日名额仅限 20 首</strong>，满额即关闭报名通道。\n• <strong>第二天：听审期 (Voting Day)</strong> — 报名曲目锁定，进入盲听分发池。社区用户（听审员）在此阶段进行试听并投下 Upvote（支持）或 Down（下沉）选票，系统实时排序计算排名。\n• <strong>第三天：公示榜单期 (Showcase Day)</strong> — 投票截止。胜出的优秀作品将正式登上极声主页黄金曝光位 <strong>“今日推荐榜”</strong>！') }} />
                       </div>
 
                       <div>
-                        <h4 className="font-bold text-gray-300">Q: 淘汰淘汰规则与保证金分红如何结算？</h4>
-                        <p className="mt-1 text-gray-400">
-                          根据每轮批次报名的歌曲总数，结算规则如下：
-                          <br />
-                          <strong>1. 单期报名歌曲达 10 首或以上（最高 20 首）：</strong>
-                          <br />
-                          • <strong>第 1 至 10 名（胜出）</strong>：歌曲成功晋级首页<strong>“今日推荐榜”</strong>，并<strong>全额退回 10.00 ECHO 保证金</strong>！
-                          <br />
-                          • <strong>第 11 名及以后（淘汰）</strong>：歌曲转为普通作品；创作者质押的 <strong>10.00 ECHO 保证金被没收，实时平分给所有参与本次打分投票的听审员</strong>，作为对社区伯乐的劳动报酬。
-                          <br />
-                          <strong>2. 单期报名歌曲不足 10 首时（少人兜底保护）：</strong>
-                          <br />
-                          • <strong>全员免遭淘汰</strong>：所有报名歌曲无视竞争直接成功晋级首页<strong>“今日推荐榜”</strong>！
-                          <br />
-                          • <strong>质押伯乐分红</strong>：在此情况下，创作者的 <strong>10.00 ECHO 保证金不予退还，而是全部充作社区伯乐激励，均匀平分给本期参与投票的所有听审员</strong>。
-                        </p>
+                        <h4 className="font-bold text-gray-300">{renderHelpText('profile.arena_q2', 'Q: 淘汰规则与保证金分红如何结算？')}</h4>
+                        <p className="mt-1 text-gray-400" dangerouslySetInnerHTML={{ __html: renderHelpText('profile.arena_a2', '根据每轮批次报名的歌曲总数，结算规则如下：\n<strong>1. 单期报名歌曲达 10 首 or 以上（最高 20 首）：</strong>\n• <strong>第 1 至 10 名（胜出）</strong>：歌曲成功晋级首页<strong>“今日推荐榜”</strong>，并<strong>全额退回 10.00 ECHO 保证金</strong>！\n• <strong>第 11 名及以后（淘汰）</strong>：歌曲转为普通作品；创作者质押的 <strong>10.00 ECHO 保证金被没收，实时平分给所有参与本次打分投票的听审员</strong>，作为对社区伯乐的劳动报酬。\n<strong>2. 单期报名歌曲不足 10 首时（少人兜底保护）：</strong>\n• <strong>全员免遭淘汰</strong>：所有报名歌曲无视竞争直接成功晋级首页<strong>“今日推荐榜”</strong>！\n• <strong>质押伯乐分红</strong>：在此情况下，创作者的 <strong>10.00 ECHO 保证金不予退还，而是全部充作社区伯乐激励，均匀平分给本期参与投票的所有听审员</strong>。') }} />
                       </div>
                     </div>
                   </div>
@@ -4080,58 +4060,57 @@ function ProfileContent() {
                   <ShieldCheck className="w-6 h-6 animate-pulse" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter">关于极声与合规说明</h2>
-                  <p className="text-xs text-gray-500 uppercase tracking-widest mt-0.5">Platform Vision & Compliance</p>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{t('profile.about_compliance_title')}</h2>
+                  <p className="text-xs text-gray-500 uppercase tracking-widest mt-0.5">{t('profile.about_compliance_subtitle')}</p>
                 </div>
               </div>
 
               <div className="space-y-4 text-xs text-gray-400 leading-relaxed font-mono">
                 {/* === 关于我们 === */}
                 <div className="pb-4 border-b border-white/5">
-                  <h4 className="font-black text-white text-sm mb-2 uppercase tracking-widest">🏢 关于我们</h4>
-                  <p className="text-[11px] text-gray-400 leading-relaxed">
-                    ECHORURA MUSIC 是由<strong className="text-white">极声科技公司</strong>创建的去中心化音乐平台。
-                  </p>
+                  <h4 className="font-black text-white text-sm mb-2 uppercase tracking-widest">{t('profile.about_us_section_title')}</h4>
+                  <p className="text-[11px] text-gray-400 leading-relaxed" dangerouslySetInnerHTML={{
+                    __html: t('profile.about_us_desc')
+                  }} />
                   <div className="mt-3 flex flex-col gap-1">
                     <p className="text-[10px] text-gray-600 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-echo-primary inline-block"></span>
-                      联系我们：<a href="mailto:echorura@piscesoul.cn" className="text-echo-primary font-bold hover:underline">echorura@piscesoul.cn</a>
+                      {t('profile.about_us_contact')}<a href="mailto:echorura@piscesoul.cn" className="text-echo-primary font-bold hover:underline">echorura@piscesoul.cn</a>
                     </p>
                     <p className="text-[10px] text-gray-600 flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-echo-secondary inline-block"></span>
-                      V1.5.0 &nbsp;© {new Date().getFullYear()} 极声科技公司 (ECHORURA Technologies). All Rights Reserved.
+                      V1.5.0 &nbsp;© {new Date().getFullYear()} {t('profile.about_us_rights')}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-white mb-1">🌟 我们的使命愿景</h4>
-                  <p className="text-[11px] text-gray-500">
-                    ECHORURA MUSIC 致力于应用前沿的<strong>去中心化共享经济理念</strong>和分布式数字记账协议，彻底重塑音乐价值链。
-                    我们将 90% 以上的聆听与发行收益交还给创作者与乐迷社区，让音乐不再受大型流媒体平台的层层中介盘剥，实现真正意义上的“创作者经济共创共享”。
-                  </p>
+                  <h4 className="font-bold text-white mb-1">{t('profile.mission_vision_title')}</h4>
+                  <p className="text-[11px] text-gray-500" dangerouslySetInnerHTML={{
+                    __html: t('profile.mission_vision_desc')
+                  }} />
                 </div>
 
                 <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2">
                   <h4 className="font-bold text-white text-[11px] flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    当前部署版本合规状态公示
+                    {t('profile.compliance_status_title')}
                   </h4>
                   
                   <div className="space-y-1.5 text-[10px] text-gray-500">
                     <p className="flex justify-between">
-                      <span>运营实体版本:</span>
+                      <span>{t('profile.compliance_entity_version')}</span>
                       <span className="text-white font-bold">
-                        {(activeConfig.region as string) === 'HK' ? 'ECHORURA MUSIC共享经济版' : (activeConfig.region as string) === 'SG' ? 'ECHORURA Singapore badges Edition' : 'ECHORURA Global Web3 Edition'}
+                        {(activeConfig.region as string) === 'HK' ? t('profile.compliance_entity_hk') : (activeConfig.region as string) === 'SG' ? t('profile.compliance_entity_sg') : t('profile.compliance_entity_global')}
                       </span>
                     </p>
                     <p className="flex justify-between">
-                      <span>核心技术特征:</span>
-                      <span className="text-echo-primary font-bold">去中心化分布式架构 / 密码学存证校验</span>
+                      <span>{t('profile.compliance_core_tech')}</span>
+                      <span className="text-echo-primary font-bold">{t('profile.compliance_core_tech_val')}</span>
                     </p>
                     <p className="flex justify-between">
-                      <span>合规豁免说明:</span>
-                      <span className="text-echo-secondary font-bold">香港合规模式 - 基于共享使用权积分构建，不涉及 any 代币发行</span>
+                      <span>{t('profile.compliance_exemption')}</span>
+                      <span className="text-echo-secondary font-bold">{t('profile.compliance_exemption_val')}</span>
                     </p>
                   </div>
                 </div>
@@ -4162,9 +4141,9 @@ function ProfileContent() {
                   </div>
                 ) : (
                   <div className="p-4 border border-emerald-500/10 bg-emerald-500/5 rounded-2xl">
-                    <p className="text-[10px] text-gray-500 leading-relaxed">
-                      💡 <strong>技术透明披露：</strong> 本平台账本记录及积分划转底层协议完全由去中心化公开审计的分布式校验代码自动签署运行。所有积分到账和共创共享权益分配的规则直接固化在密码学校验算法中，保障任何一方（包括平台本身）均无法被单方面篡改和没收。
-                    </p>
+                    <p className="text-[10px] text-gray-500 leading-relaxed" dangerouslySetInnerHTML={{
+                      __html: t('profile.compliance_transparency_disclosure')
+                    }} />
                   </div>
                 )}
               </div>
@@ -4174,7 +4153,7 @@ function ProfileContent() {
                 onClick={() => setIsAboutModalOpen(false)}
                 className="w-full py-4 rounded-2xl bg-white/5 text-gray-400 font-bold hover:bg-white/10 hover:text-white transition-all text-sm cursor-pointer"
               >
-                我知道了
+                {t('profile.compliance_button')}
               </button>
             </div>
           </div>
@@ -4214,14 +4193,14 @@ function ProfileContent() {
 
             <div className="mb-6">
               <h2 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
-                <Lock className="w-6 h-6 text-echo-primary" /> 修改账户密码
+                <Lock className="w-6 h-6 text-echo-primary" /> {t('profile.change_password_title')}
               </h2>
-              <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">Change Account Password</p>
+              <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">{t('profile.change_password_subtitle')}</p>
             </div>
 
             <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">输入新密码 (不低于6位)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">{t('profile.change_password_new_label')}</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input 
@@ -4237,7 +4216,7 @@ function ProfileContent() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">确认新密码</label>
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">{t('profile.change_password_confirm_label')}</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                   <input 
@@ -4257,7 +4236,12 @@ function ProfileContent() {
                 disabled={changePasswordLoading}
                 className="w-full mt-2 bg-gradient-to-r from-echo-primary to-echo-secondary text-black font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
-                {changePasswordLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : '确认修改密码'}
+                {changePasswordLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {t('profile.change_password_loading')}
+                  </>
+                ) : t('profile.change_password_submit')}
               </button>
             </form>
           </div>
@@ -4278,14 +4262,14 @@ function ProfileContent() {
 
             <div className="mb-6">
               <h2 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
-                <Info className="w-6 h-6 text-echo-primary" /> 意见与问题反馈
+                <Info className="w-6 h-6 text-echo-primary" /> {t('profile.feedback_title')}
               </h2>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Submit Feedback Ticket</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">{t('profile.feedback_subtitle')}</p>
             </div>
 
             <form onSubmit={handleSendFeedback} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">用户名 (Username)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">{t('profile.feedback_username_label')}</label>
                 <div className="relative">
                   <div className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-4 text-gray-400 font-bold select-none cursor-not-allowed">
                     {profile?.display_name || user?.email?.split('@')[0] || user?.phone || 'ECHORURA_User'}
@@ -4294,7 +4278,7 @@ function ProfileContent() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1">反馈与意见内容 (Feedback Content)</label>
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1">{t('profile.feedback_content_label')}</label>
                 <textarea 
                   value={feedbackContent}
                   onChange={(e) => setFeedbackContent(e.target.value)}
@@ -4302,7 +4286,7 @@ function ProfileContent() {
                   rows={6}
                   disabled={feedbackSending}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-4 text-white focus:border-echo-primary/50 focus:outline-none transition-all resize-none text-sm placeholder:text-gray-600"
-                  placeholder="请详细描述您遇到的问题、改进意见或合作意向。我们将在第一时间向您的系统关联邮箱/电话回复反馈结果..."
+                  placeholder={t('profile.feedback_placeholder')}
                 />
               </div>
 
@@ -4316,14 +4300,19 @@ function ProfileContent() {
                   }}
                   className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-gray-300 font-bold hover:bg-white/10 transition-all text-sm active:scale-98 cursor-pointer"
                 >
-                  取消
+                  {t('profile.feedback_cancel')}
                 </button>
                 <button 
                   type="submit" 
                   disabled={feedbackSending}
                   className="flex-1 bg-gradient-to-r from-echo-primary to-echo-secondary text-black font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(0,240,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  {feedbackSending ? <Loader2 className="w-5 h-5 animate-spin text-black" /> : '发送'}
+                  {feedbackSending ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin text-black shrink-0" />
+                      {t('profile.feedback_sending')}
+                    </>
+                  ) : t('profile.feedback_send')}
                 </button>
               </div>
             </form>

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
     // 2. 调用原子 RPC 进行余额扣减和交易日志入账 (行排他锁，彻底消除并发双花隐患)

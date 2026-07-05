@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     // 使用 adminClient 绕过 RLS 安全查询与插入
     const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
     // 尝试进行 Bearer Token 鉴权，支持游客与已登录用户

@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // 2. 检查交易哈希是否被重复使用，防止重放攻击 (Replay Attack)
     const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
         const { data: existingTx, error: checkError } = await adminClient

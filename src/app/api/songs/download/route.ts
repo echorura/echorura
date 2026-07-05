@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // 2. Use Service Role key to bypass RLS and execute the RPC securely
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
     const { data, error } = await supabaseAdmin.rpc('purchase_song_download', {

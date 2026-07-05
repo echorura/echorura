@@ -10,50 +10,61 @@ export default function AuthSync() {
 
   useEffect(() => {
     const fetchBalanceAndCredit = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // 1. 同步钱包余额
-        const { data: finalBalance, error: rpcError } = await supabase
-          .rpc('claim_welcome_gift');
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError && (authError.message.includes('Refresh Token') || authError.message.includes('refresh_token'))) {
+          console.warn('[AuthSync] Invalid refresh token detected, signing out to reset session.');
+          await supabase.auth.signOut();
+          window.location.reload();
+          return;
+        }
 
-        if (!rpcError && finalBalance !== null && finalBalance !== undefined) {
-          console.log('🎉 钱包资产初始化与余额同步成功，当前余额:', finalBalance);
-          setBalance(Number(finalBalance));
-        } else {
-          console.error('钱包资产同步 RPC 失败，尝试直接查询 wallets 表:', rpcError);
-          try {
-            const { data: walletData } = await supabase
-              .from('wallets')
-              .select('balance')
-              .eq('user_id', user.id)
-              .single();
-            if (walletData) {
-              setBalance(Number(walletData.balance));
+        if (user) {
+          // 1. 同步钱包余额
+          const { data: finalBalance, error: rpcError } = await supabase
+            .rpc('claim_welcome_gift');
+
+          if (!rpcError && finalBalance !== null && finalBalance !== undefined) {
+            console.log('🎉 钱包资产初始化与余额同步成功，当前余额:', finalBalance);
+            setBalance(Number(finalBalance));
+          } else {
+            console.error('钱包资产同步 RPC 失败，尝试直接查询 wallets 表:', rpcError);
+            try {
+              const { data: walletData } = await supabase
+                .from('wallets')
+                .select('balance')
+                .eq('user_id', user.id)
+                .single();
+              if (walletData) {
+                setBalance(Number(walletData.balance));
+              }
+            } catch (fallbackErr) {
+              console.error('钱包余额只读回退查询失败:', fallbackErr);
             }
-          } catch (fallbackErr) {
-            console.error('钱包余额只读回退查询失败:', fallbackErr);
+          }
+
+          // 2. 同步信用授信额度的已使用度 (usedCredit)
+          try {
+            const { data: creditData } = await supabase
+              .from('transactions')
+              .select('amount')
+              .eq('user_id', user.id)
+              .eq('type', 'equity_purchase_credit');
+
+            let totalUsedCredit = 0;
+            if (creditData) {
+              creditData.forEach((tx: any) => {
+                totalUsedCredit += Math.abs(Number(tx.amount));
+              });
+            }
+            console.log('🔄 [AuthSync] 从数据库同步已用信用额度:', totalUsedCredit);
+            setUsedCredit(totalUsedCredit);
+          } catch (creditErr) {
+            console.error('信用额度同步失败:', creditErr);
           }
         }
-
-        // 2. 同步信用授信额度的已使用度 (usedCredit)
-        try {
-          const { data: creditData } = await supabase
-            .from('transactions')
-            .select('amount')
-            .eq('user_id', user.id)
-            .eq('type', 'equity_purchase_credit');
-
-          let totalUsedCredit = 0;
-          if (creditData) {
-            creditData.forEach((tx: any) => {
-              totalUsedCredit += Math.abs(Number(tx.amount));
-            });
-          }
-          console.log('🔄 [AuthSync] 从数据库同步已用信用额度:', totalUsedCredit);
-          setUsedCredit(totalUsedCredit);
-        } catch (creditErr) {
-          console.error('信用额度同步失败:', creditErr);
-        }
+      } catch (err) {
+        console.error('[AuthSync] Exception in fetchBalanceAndCredit:', err);
       }
     };
 

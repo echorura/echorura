@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // 4. Query database for user's member_number
     const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.MEMFIRE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
     );
 
     const { data: profile, error: dbError } = await adminClient
