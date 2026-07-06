@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
 import { CONTRACT_ADDRESSES } from '@/contracts/config';
+import { syncWalletDeposit } from '@/utils/supabase/sync';
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,22 +75,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '链上交易验证失败，可能是 RPC 网络延迟，请稍后重试' }, { status: 500 });
     }
 
-    // 3. 调用原子 RPC 进行余额增加、交易日志入账以及幂等哈希锁定
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
-    );
-
+    // 3. 调用双引擎同步充值工具，将余额与流水同时写入主/副库
     const description = `链上代币充值入账: ${amount} ECHO [Tx: ${txHash}]`;
-    const { data: rpcResult, error: rpcError } = await adminClient.rpc(
-      'deposit_user_balance',
-      {
-        p_user_id: user.id,
-        p_amount: amount,
-        p_tx_hash: txHash,
-        p_description: description
-      }
-    );
+    const { data: rpcResult, error: rpcError } = await syncWalletDeposit({
+      userId: user.id,
+      amount,
+      txHash,
+      description
+    });
 
     if (rpcError || !rpcResult || !rpcResult.success) {
       console.error('Failed to execute deposit RPC:', rpcError || rpcResult?.error);

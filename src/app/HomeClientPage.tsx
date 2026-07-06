@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { usePlayerStore } from '@/store/playerStore';
 import { useLanguageStore } from '@/store/languageStore';
 import { Play, TrendingUp, Sparkles, Globe, Pause, Music2 } from 'lucide-react';
+import { fetchSongsResilient, fetchArenaRegistrationsResilient } from '@/utils/supabase/queries';
 
 const SongRow = ({ song, index, currentTrack, isPlaying, onPlay, t }: any) => {
   const isActive = currentTrack?.id === song.id;
@@ -89,16 +90,20 @@ export default function HomeClientPage() {
   useEffect(() => {
     const fetchWinners = async () => {
       try {
-        const { data } = await supabase
-          .from('arena_registrations')
-          .select('*, song:songs(*, creator:profiles(display_name, avatar_url))')
-          .eq('status', 'winner')
-          .order('arena_date', { ascending: false })
-          .order('votes_count', { ascending: false })
-          .limit(10);
+        const { data } = await fetchArenaRegistrationsResilient(supabase, {
+          status: 'winner',
+          limit: 30
+        });
 
         if (data && data.length > 0) {
-          const winnerSongs = data
+          const sortedData = [...data].sort((a, b) => {
+            const dateA = a.arena_date || '';
+            const dateB = b.arena_date || '';
+            if (dateA !== dateB) return dateB.localeCompare(dateA);
+            return (b.votes_count || 0) - (a.votes_count || 0);
+          }).slice(0, 10);
+
+          const winnerSongs = sortedData
             .filter((reg: any) => reg.song !== null)
             .map((reg: any) => ({
               ...reg.song,
@@ -165,14 +170,12 @@ export default function HomeClientPage() {
           setTrendingDiscoveries(mappedTrend);
         } else {
           setTrendingDiscoveries([]);
-        }
-
-        const { data: freshData } = await supabase
-          .from('songs')
-          .select('*, creator:profiles(display_name, avatar_url)')
-          .order('created_at', { ascending: false })
-          .limit(10);
-
+        }        const { data: freshData } = await fetchSongsResilient(supabase, {
+          limit: 10,
+          orderField: 'created_at',
+          ascending: false
+        });
+ 
         if (freshData && freshData.length > 0) {
           const mappedFresh = freshData.map(song => ({
             id: song.id,

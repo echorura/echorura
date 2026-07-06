@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '@/utils/supabase/sync';
+import { supabaseAdmin, syncCastVote } from '@/utils/supabase/sync';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
     const accessToken = authHeader.slice(7);
 
     const anonClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
     );
     const { data: { user }, error: authError } = await anonClient.auth.getUser(accessToken);
 
@@ -62,22 +62,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Arena Vote API] User ${user.id} cast "${type}" for song ${songId} on arena batch ${registration.arena_date}`);
 
-    // 6. 插入投票记录
-    const { error: insertError } = await supabaseAdmin
-      .from('arena_votes')
-      .insert({
-        user_id: user.id,
-        song_id: songId,
-        arena_date: registration.arena_date,
-        vote_type: type
-      });
-
-    if (insertError) {
-      console.error('[Arena Vote API] Insert failed:', insertError);
-      return NextResponse.json({ error: `投票记录失败: ${insertError.message}` }, { status: 500 });
-    }
-
-    // 7. 汇总最新得票数并更新 arena_registrations 的 votes_count
+    // 6. 汇总当前得票数，加上本次投票，计算最新得票数
     const { data: countData, error: countError } = await supabaseAdmin
       .from('arena_votes')
       .select('vote_type')
@@ -88,18 +73,21 @@ export async function POST(request: NextRequest) {
     if (!countError && countData) {
       newVotes = countData.reduce((acc, curr) => acc + (curr.vote_type === 'up' ? 1 : -1), 0);
     }
+    newVotes += (type === 'up' ? 1 : -1);
 
-    await supabaseAdmin
-      .from('arena_registrations')
-      .update({ votes_count: newVotes })
-      .eq('song_id', songId)
-      .eq('arena_date', registration.arena_date);
+    // 7. 使用双引擎投票双写机制
+    const syncRes = await syncCastVote({
+      userId: user.id,
+      songId: Number(songId),
+      creatorId: registration.creator_id,
+      voteType: type,
+      arenaDate: registration.arena_date,
+      newVotes
+    });
 
-    // 同时同步更新 songs 表中的总 votes 字段，保证与原系统排榜兼容
-    await supabaseAdmin
-      .from('songs')
-      .update({ votes: newVotes })
-      .eq('id', songId);
+    if (!syncRes.success) {
+      return NextResponse.json({ error: `投票记录失败: ${syncRes.error?.message || '数据库写入错误'}` }, { status: 500 });
+    }
 
     return NextResponse.json({
       success: true,

@@ -384,14 +384,34 @@ export default function AssetHubPage() {
       if (user) {
         setUser(user);
         
-        // 1. 获取最近交易流水
+        // 1. 获取最近交易流水（弹性查询，防止物理外键缺失导致联表查询失败）
         const { data: txData } = await supabase
           .from('transactions')
-          .select('*, song:songs(title)')
+          .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(20);
-        if (txData) setTransactions(txData);
+
+        if (txData && txData.length > 0) {
+          const songIds = txData.map((t: any) => t.song_id).filter(Boolean);
+          let songMap = new Map();
+          if (songIds.length > 0) {
+            const { data: songsData } = await supabase
+              .from('songs')
+              .select('id, title')
+              .in('id', songIds);
+            if (songsData) {
+              songMap = new Map(songsData.map((s: any) => [s.id, s]));
+            }
+          }
+          const mappedTxs = txData.map((t: any) => ({
+            ...t,
+            song: t.song_id ? songMap.get(t.song_id) || null : null
+          }));
+          setTransactions(mappedTxs);
+        } else if (txData) {
+          setTransactions([]);
+        }
 
         // 1.1 从数据库拉取信用代付记录并同步已用额度 (完全独立，优先执行)
         try {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin, memfireAdmin } from '@/utils/supabase/sync';
 
 // 此接口每天凌晨自动触发，将昨日报名的歌曲状态从 pending 转为 voting
 export async function GET(request: NextRequest) {
@@ -11,11 +11,6 @@ export async function GET(request: NextRequest) {
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized access to Arena Transition Engine' }, { status: 401 });
     }
-
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
-    );
 
     // 2. 获取东八区北京时间 (Asia/Shanghai) 的当前日期 YYYY-MM-DD
     const formatter = new Intl.DateTimeFormat('zh-CN', {
@@ -32,47 +27,61 @@ export async function GET(request: NextRequest) {
 
     console.log(`[ARENA TRANSITION ENGINE] 正在扫描早于今日 (${todayString}) 且处于 pending 的报名记录...`);
 
-    // 3. 获取所有早于今天的待流转报名记录的日期
-    const { data: pendingRegs, error: fetchError } = await adminClient
-      .from('arena_registrations')
-      .select('arena_date')
-      .eq('status', 'pending')
-      .lt('arena_date', todayString);
+    // 3. 定义统一的流转引擎函数
+    async function processDatabase(client: any, dbName: string) {
+      try {
+        const { data: pendingRegs, error: fetchError } = await client
+          .from('arena_registrations')
+          .select('arena_date')
+          .eq('status', 'pending')
+          .lt('arena_date', todayString);
 
-    if (fetchError) {
-      console.error('[ARENA TRANSITION ENGINE] Fetch outdated pending registrations failed:', fetchError);
-      return NextResponse.json({ error: 'Failed to fetch pending registrations' }, { status: 500 });
-    }
-
-    const transitionedDates: string[] = [];
-    const reports: any[] = [];
-
-    if (pendingRegs && pendingRegs.length > 0) {
-      const uniqueDates = Array.from(new Set(pendingRegs.map((r: any) => r.arena_date)));
-      console.log(`[ARENA TRANSITION ENGINE] 发现需要流转的日期批次:`, uniqueDates);
-
-      for (const date of uniqueDates) {
-        const { data, error } = await adminClient.rpc('transition_arena_phase', {
-          p_target_date: date
-        });
-        if (error) {
-          console.error(`[ARENA TRANSITION ENGINE] RPC failed for target date ${date}:`, error);
-        } else {
-          transitionedDates.push(date);
-          reports.push(data);
+        if (fetchError) {
+          console.error(`[ARENA TRANSITION ENGINE] [${dbName}] Fetch outdated pending registrations failed:`, fetchError.message);
+          return { success: false, error: fetchError.message, transitionedDates: [], reports: [] };
         }
+
+        const transitionedDates: string[] = [];
+        const reports: any[] = [];
+
+        if (pendingRegs && pendingRegs.length > 0) {
+          const uniqueDates: string[] = Array.from(new Set(pendingRegs.map((r: any) => r.arena_date as string)));
+          console.log(`[ARENA TRANSITION ENGINE] [${dbName}] 发现需要流转的日期批次:`, uniqueDates);
+
+          for (const date of uniqueDates) {
+            const { data, error } = await client.rpc('transition_arena_phase', {
+              p_target_date: date
+            });
+            if (error) {
+              console.error(`[ARENA TRANSITION ENGINE] [${dbName}] RPC failed for target date ${date}:`, error.message);
+            } else {
+              transitionedDates.push(date);
+              reports.push(data);
+            }
+          }
+        }
+        return { success: true, transitionedDates, reports };
+      } catch (err: any) {
+        console.error(`[ARENA TRANSITION ENGINE] [${dbName}] Unhandled exception:`, err.message);
+        return { success: false, error: err.message, transitionedDates: [], reports: [] };
       }
     }
 
-    console.log(`[ARENA TRANSITION ENGINE] 阶段流转成功完成，已流转日期:`, transitionedDates);
+    // 4. 并行执行主副库流转
+    const tasks = [processDatabase(supabaseAdmin, 'SUPABASE')];
+    if (memfireAdmin) {
+      tasks.push(processDatabase(memfireAdmin, 'MEMFIRE'));
+    }
+
+    const [primaryRes, secondaryRes] = await Promise.all(tasks);
+
+    console.log(`[ARENA TRANSITION ENGINE] 阶段流转完成. 主库:`, primaryRes, `副库:`, secondaryRes || '未启用');
 
     return NextResponse.json({
       success: true,
-      message: transitionedDates.length > 0
-        ? `Arena registrations for ${transitionedDates.join(', ')} are now open for voting!`
-        : `No outdated pending arena registrations found to transition.`,
-      transitioned_dates: transitionedDates,
-      reports
+      message: `Arena transition completed on all active databases.`,
+      primary: primaryRes,
+      secondary: secondaryRes || null
     });
 
   } catch (error: any) {

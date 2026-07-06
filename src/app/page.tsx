@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { Metadata } from 'next';
 import HomeClientPage from './HomeClientPage';
+import { fetchPlaylistResilient, fetchSingleSongResilient } from '@/utils/supabase/queries';
 
 interface Props {
   searchParams: Promise<{ songId?: string; playlistId?: string }>;
@@ -12,11 +13,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   if (playlistId) {
     try {
       const supabase = await createClient();
-      const { data: playlist } = await supabase
-        .from('playlists')
-        .select('*, creator:profiles(display_name, avatar_url)')
-        .eq('id', playlistId)
-        .single();
+      const { data: playlist } = await fetchPlaylistResilient(supabase, playlistId);
 
       if (playlist) {
         const title = playlist.name || 'ECHORURA Playlist';
@@ -68,11 +65,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   try {
     const supabase = await createClient();
-    const { data: song } = await supabase
-      .from('songs')
-      .select('*, creator:profiles(display_name, avatar_url)')
-      .eq('id', songId)
-      .single();
+    const { data: song } = await fetchSingleSongResilient(supabase, songId);
 
     if (!song) {
       return {

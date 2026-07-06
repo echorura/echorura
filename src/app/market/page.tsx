@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { activeConfig } from '@/utils/compliance';
+import { fetchSongsResilient } from '@/utils/supabase/queries';
 import { 
   TrendingUp, 
   Info, 
@@ -69,11 +70,12 @@ export default function MarketPage() {
   useEffect(() => {
     const fetchIpoSongs = async () => {
       try {
-        const { data, error } = await supabase
-          .from('songs')
-          .select('*, creator:profiles(display_name, avatar_url)')
-          .filter('ipo_percentage', 'gt', 0)
-          .order('created_at', { ascending: false });
+        const { data, error } = await fetchSongsResilient(supabase, {
+          gtField: 'ipo_percentage',
+          gtValue: 0,
+          orderField: 'created_at',
+          ascending: false
+        });
         
         if (data && data.length > 0) {
           setIpoSongs(data);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '@/utils/supabase/sync';
+import { supabaseAdmin, syncRegisterForArena } from '@/utils/supabase/sync';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
     const accessToken = authHeader.slice(7);
 
     const anonClient = createClient(
-      process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_MEMFIRE_ANON_KEY!
     );
     const { data: { user }, error: authError } = await anonClient.auth.getUser(accessToken);
 
@@ -32,10 +32,19 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Arena Register API] User ${user.id} registering song ${songId} for curation arena`);
 
-    // 3. 调用原子 RPC 进行报名和 10 ECHO 扣款质押
-    const { data, error: rpcError } = await supabaseAdmin.rpc('register_for_arena', {
-      p_user_id: user.id,
-      p_song_id: Number(songId)
+    // 3. 查询歌曲的 creator_id
+    const { data: songData } = await supabaseAdmin
+      .from('songs')
+      .select('creator_id')
+      .eq('id', Number(songId))
+      .single();
+    const creatorId = songData?.creator_id || user.id;
+
+    // 4. 调用同步双写竞技场报名 RPC
+    const { data, error: rpcError } = await syncRegisterForArena({
+      userId: user.id,
+      songId: Number(songId),
+      creatorId
     });
 
     if (rpcError) {

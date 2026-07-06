@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin, memfireAdmin } from '@/utils/supabase/sync';
 
 // 此接口每天凌晨自动触发，对已结束投票周期的批次进行结算（前10名退款上榜，余下淘汰扣款并分红给听审员）
 export async function GET(request: NextRequest) {
@@ -11,11 +11,6 @@ export async function GET(request: NextRequest) {
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized access to Arena Settlement Engine' }, { status: 401 });
     }
-
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_MEMFIRE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.MEMFIRE_SERVICE_ROLE_KEY!
-    );
 
     // 2. 获取东八区北京时间 (Asia/Shanghai) 的当前日期 YYYY-MM-DD
     const formatter = new Intl.DateTimeFormat('zh-CN', {
@@ -40,47 +35,61 @@ export async function GET(request: NextRequest) {
 
     console.log(`[ARENA SETTLEMENT ENGINE] 正在扫描早于昨日 (${yesterdayString}) 且处于 voting 的对决记录进行结算...`);
 
-    // 3. 获取所有早于昨日的待结算对决记录的日期
-    const { data: votingRegs, error: fetchError } = await adminClient
-      .from('arena_registrations')
-      .select('arena_date')
-      .eq('status', 'voting')
-      .lt('arena_date', yesterdayString);
+    // 3. 定义统一的结算引擎函数
+    async function processDatabase(client: any, dbName: string) {
+      try {
+        const { data: votingRegs, error: fetchError } = await client
+          .from('arena_registrations')
+          .select('arena_date')
+          .eq('status', 'voting')
+          .lt('arena_date', yesterdayString);
 
-    if (fetchError) {
-      console.error('[ARENA SETTLEMENT ENGINE] Fetch outdated voting registrations failed:', fetchError);
-      return NextResponse.json({ error: 'Failed to fetch voting registrations' }, { status: 500 });
-    }
-
-    const settledDates: string[] = [];
-    const reports: any[] = [];
-
-    if (votingRegs && votingRegs.length > 0) {
-      const uniqueDates = Array.from(new Set(votingRegs.map((r: any) => r.arena_date)));
-      console.log(`[ARENA SETTLEMENT ENGINE] 发现需要结算的日期批次:`, uniqueDates);
-
-      for (const date of uniqueDates) {
-        const { data, error } = await adminClient.rpc('settle_arena', {
-          p_target_date: date
-        });
-        if (error) {
-          console.error(`[ARENA SETTLEMENT ENGINE] RPC failed for target date ${date}:`, error);
-        } else {
-          settledDates.push(date);
-          reports.push(data);
+        if (fetchError) {
+          console.error(`[ARENA SETTLEMENT ENGINE] [${dbName}] Fetch outdated voting registrations failed:`, fetchError.message);
+          return { success: false, error: fetchError.message, settledDates: [], reports: [] };
         }
+
+        const settledDates: string[] = [];
+        const reports: any[] = [];
+
+        if (votingRegs && votingRegs.length > 0) {
+          const uniqueDates: string[] = Array.from(new Set(votingRegs.map((r: any) => r.arena_date as string)));
+          console.log(`[ARENA SETTLEMENT ENGINE] [${dbName}] 发现需要结算的日期批次:`, uniqueDates);
+
+          for (const date of uniqueDates) {
+            const { data, error } = await client.rpc('settle_arena', {
+              p_target_date: date
+            });
+            if (error) {
+              console.error(`[ARENA SETTLEMENT ENGINE] [${dbName}] RPC failed for target date ${date}:`, error.message);
+            } else {
+              settledDates.push(date);
+              reports.push(data);
+            }
+          }
+        }
+        return { success: true, settledDates, reports };
+      } catch (err: any) {
+        console.error(`[ARENA SETTLEMENT ENGINE] [${dbName}] Unhandled exception:`, err.message);
+        return { success: false, error: err.message, settledDates: [], reports: [] };
       }
     }
 
-    console.log(`[ARENA SETTLEMENT ENGINE] 结算圆满完成，已结算日期:`, settledDates);
+    // 4. 并行执行主副库结算
+    const tasks = [processDatabase(supabaseAdmin, 'SUPABASE')];
+    if (memfireAdmin) {
+      tasks.push(processDatabase(memfireAdmin, 'MEMFIRE'));
+    }
+
+    const [primaryRes, secondaryRes] = await Promise.all(tasks);
+
+    console.log(`[ARENA SETTLEMENT ENGINE] 结算完成. 主库:`, primaryRes, `副库:`, secondaryRes || '未启用');
 
     return NextResponse.json({
       success: true,
-      message: settledDates.length > 0
-        ? `Arena settlements for ${settledDates.join(', ')} executed successfully!`
-        : `No outdated voting arena registrations found to settle.`,
-      settled_dates: settledDates,
-      reports
+      message: `Arena settlement completed on all active databases.`,
+      primary: primaryRes,
+      secondary: secondaryRes || null
     });
 
   } catch (error: any) {

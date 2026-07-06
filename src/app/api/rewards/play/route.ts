@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { syncRecordMiningReward } from '@/utils/supabase/sync';
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,13 +36,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      // 游客/匿名收听记录，用于累加播放量，无积分收益
-      const { error: guestError } = await adminClient.rpc('record_mining_reward', {
-        p_user_id: null,
-        p_amount: 0,
-        p_type: 'listen_reward',
-        p_description: `游客收听歌曲 (无收益)`,
-        p_song_id: songId
+      const { error: guestError } = await syncRecordMiningReward({
+        userId: null,
+        amount: 0,
+        type: 'listen_reward',
+        description: `游客收听歌曲 (无收益)`,
+        songId: songId
       });
       if (guestError) {
         console.error('Failed to record guest playback:', guestError);
@@ -123,21 +123,7 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    // 1. 记录听众奖励 (0.3 ECHO)
-    const { error: listenerError } = await adminClient.rpc('record_mining_reward', {
-      p_user_id: user.id,
-      p_amount: 0.3,
-      p_type: 'listen_reward',
-      p_description: `收听歌曲奖励`,
-      p_song_id: songId
-    });
-
-    if (listenerError) {
-      console.error('Failed to record listener reward:', listenerError);
-      return NextResponse.json({ error: 'Failed to process listener reward' }, { status: 500 });
-    }
-
-    // 2. 查询歌曲信息（含份额数据，用于按比例拆分 0.7 ECHO）
+    // 1. 查询歌曲信息（含份额数据，用于按比例拆分 0.7 ECHO）
     const { data: songData, error: songError } = await adminClient
       .from('songs')
       .select('creator_id, is_ipo_active, total_shares, remaining_shares')
@@ -149,19 +135,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch song data' }, { status: 500 });
     }
 
+    // 2. 记录听众奖励 (0.3 ECHO)
+    const { error: listenerError } = await syncRecordMiningReward({
+      userId: user.id,
+      amount: 0.3,
+      type: 'listen_reward',
+      description: `收听歌曲奖励`,
+      songId: songId,
+      creatorId: songData.creator_id
+    });
+
+    if (listenerError) {
+      console.error('Failed to record listener reward:', listenerError);
+      return NextResponse.json({ error: 'Failed to process listener reward' }, { status: 500 });
+    }
+
     // 3. 按已售/未售比例拆分 0.7 ECHO
     // - 未开启 IPO：0.7 全部归创作者（creator_reward）
     // - 已开启 IPO：按 (已售份额 / 总份额) 比例拆分
     //   · 已售比例 × 0.7 → 版权池（T+1 结算给投资者）
     //   · 未售比例 × 0.7 → 创作者（creator_reward，T+1 结算）
     if (!songData.is_ipo_active) {
-      // 独创歌曲：0.7 全给创作者
-      const { error: creatorError } = await adminClient.rpc('record_mining_reward', {
-        p_user_id: songData.creator_id,
-        p_amount: 0.7,
-        p_type: 'creator_reward',
-        p_description: '收听分成 (独创歌曲)',
-        p_song_id: songId
+      const { error: creatorError } = await syncRecordMiningReward({
+        userId: songData.creator_id,
+        amount: 0.7,
+        type: 'creator_reward',
+        description: '收听分成 (独创歌曲)',
+        songId: songId,
+        creatorId: songData.creator_id
       });
       if (creatorError) {
         console.error('Failed to record creator reward:', creatorError);
@@ -179,12 +180,13 @@ export async function POST(request: NextRequest) {
 
       // 投资者版权池份额（T+1 结算）
       if (investorAmount > 0) {
-        const { error: poolError } = await adminClient.rpc('record_mining_reward', {
-          p_user_id: null,
-          p_amount: investorAmount,
-          p_type: 'dividend_pool_reward',
-          p_description: `版权分红（已售 ${soldShares}/${totalShares} 份）`,
-          p_song_id: songId
+        const { error: poolError } = await syncRecordMiningReward({
+          userId: null,
+          amount: investorAmount,
+          type: 'dividend_pool_reward',
+          description: `版权分红（已售 ${soldShares}/${totalShares} 份）`,
+          songId: songId,
+          creatorId: songData.creator_id
         });
         if (poolError) {
           console.error('Failed to record investor pool reward:', poolError);
@@ -194,12 +196,13 @@ export async function POST(request: NextRequest) {
 
       // 创作者未售份额收益（T+1 结算）
       if (creatorAmount > 0) {
-        const { error: creatorError } = await adminClient.rpc('record_mining_reward', {
-          p_user_id: songData.creator_id,
-          p_amount: creatorAmount,
-          p_type: 'creator_reward',
-          p_description: `收听分成（未售出 ${remainingShares}/${totalShares} 份归创作者）`,
-          p_song_id: songId
+        const { error: creatorError } = await syncRecordMiningReward({
+          userId: songData.creator_id,
+          amount: creatorAmount,
+          type: 'creator_reward',
+          description: `收听分成（未售出 ${remainingShares}/${totalShares} 份归创作者）`,
+          songId: songId,
+          creatorId: songData.creator_id
         });
         if (creatorError) {
           console.error('Failed to record creator proportional reward:', creatorError);

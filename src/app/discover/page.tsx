@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { createClient } from '@/utils/supabase/server';
 import DiscoverClientPage from './DiscoverClientPage';
+import { fetchPlaylistResilient } from '@/utils/supabase/queries';
 
 interface Props {
   searchParams: Promise<{ playlistId?: string }>;
@@ -30,11 +31,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
   try {
     const supabase = await createClient();
-    const { data: playlist } = await supabase
-      .from('playlists')
-      .select('*, creator:profiles(display_name, avatar_url)')
-      .eq('id', playlistId)
-      .single();
+    const { data: playlist } = await fetchPlaylistResilient(supabase, playlistId);
 
     if (!playlist) {
       return {

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
+import { fetchSongsResilient, fetchArenaRegistrationsResilient } from '@/utils/supabase/queries';
 import {
   Search,
   Music,
@@ -202,10 +203,10 @@ const MOODS = [
       }
 
       // 1. 获取全局作品数据及播放量
-      const { data } = await supabase
-        .from('songs')
-        .select('*, creator:profiles(display_name, avatar_url)')
-        .order('created_at', { ascending: false });
+      const { data } = await fetchSongsResilient(supabase, {
+        orderField: 'created_at',
+        ascending: false
+      });
 
       if (data && data.length > 0) {
         const songIds = data.map(s => s.id);
@@ -233,13 +234,12 @@ const MOODS = [
       }
 
       // 2. 🌟 从数据库加载全部听审竞技场记录并在内存中分区存储
-      const { data: regsData, error: regsError } = await supabase
-        .from('arena_registrations')
-        .select('*, song:songs(*, creator:profiles(display_name, avatar_url))')
-        .order('votes_count', { ascending: false });
+      const { data: regsData, error: regsError } = await fetchArenaRegistrationsResilient(supabase);
 
       if (!regsError && regsData) {
-        const allRegs = regsData
+        // 在内存中排序：按 votes_count 降序
+        const sortedRegsData = [...regsData].sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
+        const allRegs = sortedRegsData
           .filter((reg: any) => reg.song !== null)
           .map((reg: any) => ({
             ...reg.song,
