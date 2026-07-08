@@ -25,6 +25,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "ECHORURA",
   },
+  other: {
+    "talentapp:project_verification": "f8512aaae882ecd874fec582f47cd9db8393c6cb4562e2d326aab3484eff4a955ab0b1cbd115902963eaf94c5eda30fedb28ea69d945f8ecda83218995ca464f"
+  }
 };
 
 export const viewport = {
