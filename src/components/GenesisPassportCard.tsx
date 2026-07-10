@@ -6,6 +6,7 @@ import { parseAbi } from 'viem';
 import { createClient } from '@/utils/supabase/client';
 import { useLanguageStore } from '@/store/languageStore';
 import { CONTRACT_ADDRESSES, GenesisPassportABI } from '@/contracts/config';
+import { BUILDER_CODE_SUFFIX } from '@/utils/erc8021';
 import { GenerativeAudioEngine } from '@/utils/GenerativeAudioEngine';
 import { 
   Sparkles, 
@@ -165,6 +166,7 @@ export default function GenesisPassportCard() {
         abi: parseAbi(GenesisPassportABI as any),
         functionName: 'claimPassport',
         args: [BigInt(signedNumber), signature],
+        dataSuffix: BUILDER_CODE_SUFFIX,
       });
 
       console.log('[Genesis Claim] Transaction sent, hash:', txHash);

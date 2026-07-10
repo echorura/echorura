@@ -8,6 +8,7 @@ import { activeConfig } from '@/utils/compliance';
 import { useAccount, useWriteContract } from 'wagmi';
 import { parseUnits, parseAbi } from 'viem';
 import { CONTRACT_ADDRESSES, EchoTokenABI } from '@/contracts/config';
+import { BUILDER_CODE_SUFFIX } from '@/utils/erc8021';
 import {
   Play,
   Pause,
@@ -444,6 +445,7 @@ export default function GlobalAudioPlayer() {
           abi: parseAbi(EchoTokenABI as any),
           functionName: 'transfer',
           args: [CONTRACT_ADDRESSES.AdminAddress as `0x${string}`, parseUnits(amount.toString(), 18)],
+          dataSuffix: BUILDER_CODE_SUFFIX,
         });
 
         showPlayerToast('支付已提交，等待链上确认...', 'info');

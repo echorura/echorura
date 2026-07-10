@@ -16,6 +16,7 @@ import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContrac
 import { formatUnits, parseUnits, isAddress, parseAbi } from 'viem';
 import { CONTRACT_ADDRESSES, EchoTokenABI, MusicIPABI } from '@/contracts/config';
 import GenesisPassportCard from '@/components/GenesisPassportCard';
+import { BUILDER_CODE_SUFFIX } from '@/utils/erc8021';
 
 import { 
   ArrowUpRight, 
@@ -143,6 +144,7 @@ export default function AssetHubPage() {
         abi: parseAbi(MusicIPABI as any),
         functionName: 'claimDividends',
         args: [BigInt(songId)],
+        dataSuffix: BUILDER_CODE_SUFFIX,
       });
       // Wait a few seconds then refresh
       await new Promise(r => setTimeout(r, 6000));
@@ -199,6 +201,7 @@ export default function AssetHubPage() {
         abi: parseAbi(EchoTokenABI as any),
         functionName: 'transfer',
         args: [recipientAddress as `0x${string}`, parseUnits(transferAmount, 18)],
+        dataSuffix: BUILDER_CODE_SUFFIX,
       });
     } catch (err: any) {
       console.error('[Transfer Error]', err);
@@ -279,6 +282,7 @@ export default function AssetHubPage() {
         abi: parseAbi(EchoTokenABI as any),
         functionName: 'transfer',
         args: [CONTRACT_ADDRESSES.AdminAddress as `0x${string}`, parseUnits(depositAmount, 18)],
+        dataSuffix: BUILDER_CODE_SUFFIX,
       });
     } catch (err: any) {
       console.error('[Deposit Transfer Error]', err);

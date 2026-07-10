@@ -28,6 +28,7 @@ import { FALLBACK_SONGS } from '@/utils/mockData';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, parseAbi } from 'viem';
 import { CONTRACT_ADDRESSES, EchoTokenABI } from '@/contracts/config';
+import { BUILDER_CODE_SUFFIX } from '@/utils/erc8021';
 
 
 export default function MarketPage() {
@@ -130,6 +131,7 @@ export default function MarketPage() {
           abi: parseAbi(EchoTokenABI as any),
           functionName: 'transfer',
           args: [CONTRACT_ADDRESSES.AdminAddress as `0x${string}`, parseUnits(cost.toString(), 18)],
+          dataSuffix: BUILDER_CODE_SUFFIX,
         });
         setOnChainPayTxHash(txHash);
         showPremiumToast('支付交易已提交，正在等待链上确认...', 'success');
