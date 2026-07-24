@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 import { createClient } from '@/utils/supabase/client';
 import { activeConfig } from '@/utils/compliance';
-import { useAccount, useWriteContract } from 'wagmi';
+import { useAccount, useWriteContract, useChainId } from 'wagmi';
 import { parseUnits, parseAbi } from 'viem';
-import { CONTRACT_ADDRESSES, EchoTokenABI } from '@/contracts/config';
+import { CONTRACT_ADDRESSES, EchoTokenABI, getContractAddresses } from '@/contracts/config';
 import { BUILDER_CODE_SUFFIX } from '@/utils/erc8021';
 import {
   Play,
@@ -114,6 +114,8 @@ export default function GlobalAudioPlayer() {
   const [playerPaymentMode, setPlayerPaymentMode] = useState<'balance' | 'onchain'>('balance');
   const { address: connectedAddress, isConnected } = useAccount();
   const { writeContractAsync: writeTokenTransfer } = useWriteContract();
+  const chainId = useChainId();
+  const contractAddresses = getContractAddresses(chainId);
 
   // Dynamic Scrolling Lyric States & Ref
   const [parsedLyrics, setParsedLyrics] = useState<LyricLine[]>([]);
@@ -146,7 +148,7 @@ export default function GlobalAudioPlayer() {
     removeFromQueue,
     clearQueue
   } = usePlayerStore();
-  const { t } = useLanguageStore();
+  const { t } = useTranslation();
 
   const supabase = createClient();
 
@@ -441,16 +443,17 @@ export default function GlobalAudioPlayer() {
         showPlayerToast('正在发起链上支付，请在钱包中确认...', 'info');
 
         const txHash = await writeTokenTransfer({
-          address: CONTRACT_ADDRESSES.EchoToken as `0x${string}`,
+          address: contractAddresses.EchoToken as `0x${string}`,
           abi: parseAbi(EchoTokenABI as any),
           functionName: 'transfer',
-          args: [CONTRACT_ADDRESSES.AdminAddress as `0x${string}`, parseUnits(amount.toString(), 18)],
-          dataSuffix: BUILDER_CODE_SUFFIX,
+          args: [contractAddresses.AdminAddress as `0x${string}`, parseUnits(amount.toString(), 18)],
+          dataSuffix: chainId === 677 ? undefined : BUILDER_CODE_SUFFIX,
         });
 
         showPlayerToast('支付已提交，等待链上确认...', 'info');
         const { ethers } = await import('ethers');
-        const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+        const rpcUrl = chainId === 677 ? 'https://rpc.botchain.ai' : 'https://sepolia.base.org';
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
         let receipt = null;
         for (let i = 0; i < 20; i++) {
           await new Promise(r => setTimeout(r, 3000));
@@ -462,7 +465,7 @@ export default function GlobalAudioPlayer() {
         const res = await fetch('/api/market/purchase', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({ txHash, songId: currentTrack.id, shareAmount: amount, userAddress: connectedAddress })
+          body: JSON.stringify({ txHash, songId: currentTrack.id, shareAmount: amount, userAddress: connectedAddress, chainId: chainId })
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || '链上股权分发失败');

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLanguageStore } from '@/store/languageStore';
+import { useLanguageStore, useTranslation } from '@/store/languageStore';
 import { createClient } from '@/utils/supabase/client';
 import { usePlayerStore } from '@/store/playerStore';
 import { useRouter, usePathname } from 'next/navigation';
@@ -13,7 +13,7 @@ export default function StartupSequence() {
   const [phase, setPhase] = useState<'logo' | 'text' | 'done'>('logo');
   const [isClient, setIsClient] = useState(false);
   const [sharedSongId, setSharedSongId] = useState<string | null>(null);
-  const { language, setLanguage, t } = useLanguageStore();
+  const { language, setLanguage, t } = useTranslation();
   const { setTrack, setPlaylist } = usePlayerStore();
   const router = useRouter();
   const pathname = usePathname();

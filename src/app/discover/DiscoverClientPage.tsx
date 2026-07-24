@@ -36,12 +36,12 @@ import { usePlayerStore } from '@/store/playerStore';
 import { useSearchParams } from 'next/navigation';
 import { FALLBACK_SONGS } from '@/utils/mockData';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 
 
 
 const SongRow = ({ song, onPlay, currentTrack, isPlaying, onAddToPlaylist }: any) => {
-  const { t } = useLanguageStore();
+  const { t } = useTranslation();
   const isActive = currentTrack?.id === song.id;
   return (
     <div
@@ -81,7 +81,7 @@ const SongRow = ({ song, onPlay, currentTrack, isPlaying, onAddToPlaylist }: any
 };
 
 function DiscoverContent() {
-  const { t, language } = useLanguageStore();
+  const { t, language } = useTranslation();
 
   const GENRES = [
   { id: 'pop', label: t('genre.pop'), icon: Music, color: 'from-pink-500 to-rose-500' },

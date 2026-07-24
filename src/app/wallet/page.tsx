@@ -9,12 +9,12 @@ declare global {
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { usePlayerStore } from '@/store/playerStore';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 import { activeConfig } from '@/utils/compliance';
 import Link from 'next/link';
-import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId, useSwitchChain } from 'wagmi';
 import { formatUnits, parseUnits, isAddress, parseAbi } from 'viem';
-import { CONTRACT_ADDRESSES, EchoTokenABI, MusicIPABI } from '@/contracts/config';
+import { CONTRACT_ADDRESSES, EchoTokenABI, MusicIPABI, getContractAddresses } from '@/contracts/config';
 import GenesisPassportCard from '@/components/GenesisPassportCard';
 import { BUILDER_CODE_SUFFIX } from '@/utils/erc8021';
 
@@ -55,26 +55,45 @@ export default function AssetHubPage() {
     setEquities,
     setUsedCredit
   } = usePlayerStore();
-  const { t } = useLanguageStore();
+  const { t, language } = useTranslation();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
 
-  // Web3 Real-Chain States
   const { address: connectedAddress, isConnected } = useAccount();
   const aaWalletAddress = isConnected && connectedAddress ? connectedAddress : null;
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
 
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+  const contractAddresses = getContractAddresses(chainId);
+
   const handleConnectWallet = () => {
-    const connector = connectors.find((c) => c.id === 'coinbaseWallet' || c.id === 'coinbaseWalletSDK');
-    if (connector) {
-      connect({ connector });
-    } else if (connectors.length > 0) {
-      connect({ connector: connectors[0] });
+    if (chainId === 677) {
+      const connector = connectors.find((c) => c.id === 'injected' || c.id === 'metaMask' || c.id === 'metaMaskSDK');
+      if (connector) {
+        connect({ connector });
+      } else {
+        const anyInjected = connectors.find((c) => c.type === 'injected');
+        if (anyInjected) {
+          connect({ connector: anyInjected });
+        } else {
+          alert(language === 'en' 
+            ? 'Web3 wallet extension (e.g. MetaMask) not found. Please install MetaMask or TokenPocket.' 
+            : '未找到 Web3 钱包插件（如 MetaMask）。请在浏览器中安装 MetaMask 或 TokenPocket 插件。');
+        }
+      }
     } else {
-      alert('No web3 connectors found. Please reload or check your connection.');
+      const connector = connectors.find((c) => c.id === 'coinbaseWallet' || c.id === 'coinbaseWalletSDK');
+      if (connector) {
+        connect({ connector });
+      } else if (connectors.length > 0) {
+        connect({ connector: connectors[0] });
+      } else {
+        alert('No web3 connectors found. Please reload or check your connection.');
+      }
     }
   };
   
@@ -86,7 +105,7 @@ export default function AssetHubPage() {
 
   // Web3 read contract hook to fetch real-time on-chain balance
   const { data: onChainBalanceRaw, refetch: refetchOnChainBalance } = useReadContract({
-    address: CONTRACT_ADDRESSES.EchoToken as `0x${string}`,
+    address: contractAddresses.EchoToken as `0x${string}`,
     abi: parseAbi(EchoTokenABI as any),
     functionName: 'balanceOf',
     args: aaWalletAddress ? [aaWalletAddress as `0x${string}`] : undefined,
@@ -112,8 +131,9 @@ export default function AssetHubPage() {
     // We use a single ethers call via JSON-RPC for read-only queries (no wallet needed)
     try {
       const { ethers } = await import('ethers');
-      const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
-      const musicIPContract = new ethers.Contract(CONTRACT_ADDRESSES.MusicIP, MusicIPABI, provider);
+      const rpcUrl = chainId === 677 ? 'https://rpc.botchain.ai' : 'https://sepolia.base.org';
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
+      const musicIPContract = new ethers.Contract(contractAddresses.MusicIP, MusicIPABI, provider);
       for (const eq of equities) {
         try {
           const pending: bigint = await musicIPContract.getPendingDividends(aaWalletAddress, BigInt(eq.id));
@@ -140,11 +160,11 @@ export default function AssetHubPage() {
     setClaimingSongId(songId);
     try {
       const txHash = await writeMusicIP({
-        address: CONTRACT_ADDRESSES.MusicIP as `0x${string}`,
+        address: contractAddresses.MusicIP as `0x${string}`,
         abi: parseAbi(MusicIPABI as any),
         functionName: 'claimDividends',
         args: [BigInt(songId)],
-        dataSuffix: BUILDER_CODE_SUFFIX,
+        dataSuffix: chainId === 677 ? undefined : BUILDER_CODE_SUFFIX,
       });
       // Wait a few seconds then refresh
       await new Promise(r => setTimeout(r, 6000));
@@ -197,11 +217,11 @@ export default function AssetHubPage() {
 
     try {
       writeContract({
-        address: CONTRACT_ADDRESSES.EchoToken as `0x${string}`,
+        address: contractAddresses.EchoToken as `0x${string}`,
         abi: parseAbi(EchoTokenABI as any),
         functionName: 'transfer',
         args: [recipientAddress as `0x${string}`, parseUnits(transferAmount, 18)],
-        dataSuffix: BUILDER_CODE_SUFFIX,
+        dataSuffix: chainId === 677 ? undefined : BUILDER_CODE_SUFFIX,
       });
     } catch (err: any) {
       console.error('[Transfer Error]', err);
@@ -242,7 +262,8 @@ export default function AssetHubPage() {
             },
             body: JSON.stringify({
               txHash: depositTxHash,
-              amount: Number(depositAmount)
+              amount: Number(depositAmount),
+              chainId: chainId
             })
           });
 
@@ -278,11 +299,11 @@ export default function AssetHubPage() {
 
     try {
       writeDeposit({
-        address: CONTRACT_ADDRESSES.EchoToken as `0x${string}`,
+        address: contractAddresses.EchoToken as `0x${string}`,
         abi: parseAbi(EchoTokenABI as any),
         functionName: 'transfer',
-        args: [CONTRACT_ADDRESSES.AdminAddress as `0x${string}`, parseUnits(depositAmount, 18)],
-        dataSuffix: BUILDER_CODE_SUFFIX,
+        args: [contractAddresses.AdminAddress as `0x${string}`, parseUnits(depositAmount, 18)],
+        dataSuffix: chainId === 677 ? undefined : BUILDER_CODE_SUFFIX,
       });
     } catch (err: any) {
       console.error('[Deposit Transfer Error]', err);
@@ -350,7 +371,8 @@ export default function AssetHubPage() {
         },
         body: JSON.stringify({
           address: targetAddress,
-          amount: amountToSync
+          amount: amountToSync,
+          chainId: chainId
         })
       });
 
@@ -766,7 +788,7 @@ export default function AssetHubPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="px-2.5 py-0.5 rounded-full bg-echo-primary/15 border border-echo-primary/30 text-[10px] font-black text-echo-primary uppercase tracking-wider">
-                  Base Sepolia Testnet
+                  {chainId === 677 ? 'BOT Chain' : 'Base Sepolia Testnet'}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-[10px] font-black text-purple-400 uppercase tracking-wider">
                   Account Abstraction
@@ -881,7 +903,11 @@ export default function AssetHubPage() {
                     </div>
 
                     <p className="text-[11px] text-gray-400 leading-relaxed">
-                      {t('wallet.smart_wallet_desc')}
+                      {chainId === 677 
+                        ? (language === 'en'
+                            ? "Connected to BOT Chain. You can transfer assets or claim dividends directly."
+                            : "已成功连接至 BOT Chain 公链。您可以直接在此进行资产转账或清算划转。")
+                        : t('wallet.smart_wallet_desc')}
                     </p>
                     <button
                       onClick={() => disconnect()}
@@ -899,19 +925,33 @@ export default function AssetHubPage() {
                         className="mx-auto bg-echo-primary hover:scale-[1.03] active:scale-[0.97] text-black px-4 py-2 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,240,255,0.2)] cursor-pointer"
                       >
                         <Wallet className="w-3.5 h-3.5 text-black" />
-                        {t('wallet.connect_smart_wallet')}
+                        {chainId === 677 
+                          ? (language === 'en'
+                              ? "Connect Web3 Wallet (MetaMask / TokenPocket)"
+                              : "连接您已有的 Web3 钱包（如 MetaMask / TokenPocket）")
+                          : t('wallet.connect_smart_wallet')}
                       </button>
                     </div>
                     <p className="text-[11px] text-gray-500 leading-relaxed">
-                      {t('wallet.smart_wallet_desc')}
+                      {chainId === 677 
+                        ? (language === 'en'
+                            ? "BOT Chain does not support smart passkey custody. Please connect a standard browser extension wallet."
+                            : "BOT Chain 公链不支持智能托管钱包，请连接您已有的标准 Web3 浏览器插件钱包。")
+                        : t('wallet.smart_wallet_desc')}
                     </p>
                   </>
                 )}
               </div>
               <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center text-xs">
-                <span className="text-gray-500">{t('wallet.custody_status')}</span>
+                <span className="text-gray-500">
+                  {chainId === 677 
+                    ? (language === 'en' ? "Wallet Type" : "钱包类型")
+                    : t('wallet.custody_status')}
+                </span>
                 <span className="text-gray-300 font-bold flex items-center gap-1">
-                  {t('wallet.silent_custody')}
+                  {chainId === 677 
+                    ? (language === 'en' ? "Self-Custody (Web3)" : "去中心化自托管 (Web3)")
+                    : t('wallet.silent_custody')}
                 </span>
               </div>
             </div>
@@ -929,12 +969,12 @@ export default function AssetHubPage() {
                 </div>
               </div>
               <a 
-                href={`https://sepolia.basescan.org/tx/${txHash}`}
+                href={chainId === 677 ? `https://scan.botchain.ai/tx/${txHash}` : `https://sepolia.basescan.org/tx/${txHash}`}
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs font-bold text-echo-primary hover:underline flex items-center gap-1 shrink-0"
               >
-                {t('wallet.view_on_basescan')}
+                {chainId === 677 ? 'View on BOTScan' : (t('wallet.view_on_basescan') || 'View on BaseScan')}
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>

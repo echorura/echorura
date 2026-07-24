@@ -3,31 +3,44 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePlayerStore } from '@/store/playerStore';
-import { useLanguageStore, translations } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 import { createClient } from '@/utils/supabase/client';
 import AuthModal from '@/components/auth/AuthModal';
 import { LogOut, User as UserIcon, Search, Bell, Globe, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useChainId, useSwitchChain, useAccount, useDisconnect } from 'wagmi';
 
 export default function TopNav() {
   const router = useRouter();
   const { echoBalance, earnedThisSession } = usePlayerStore();
-  const { language, setLanguage, t } = useLanguageStore();
-  const [isMounted, setIsMounted] = useState(false);
+  const { language, setLanguage, t } = useTranslation();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+  const { connector, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  const [showNetworkMenu, setShowNetworkMenu] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const tSafe = (key: string) => {
-    if (!isMounted) {
-      return translations[key]?.zh || key;
+  const handleSwitchNetwork = async (targetChainId: number) => {
+    const isCoinbase = connector?.id?.toLowerCase().includes('coinbase') || connector?.name?.toLowerCase().includes('coinbase');
+    if (targetChainId === 677 && isConnected && isCoinbase) {
+      disconnect();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      alert(language === 'en'
+        ? 'Coinbase Smart Wallet does not support BOT Chain. Wallet has been disconnected. Please connect using MetaMask or TokenPocket.'
+        : 'Coinbase 智能钱包不支持 BOT Chain。已为您断开钱包连接，请在切换网络后使用 MetaMask 或 TokenPocket 插件钱包连接。');
+      return;
     }
-    return t(key);
+    try {
+      switchChain({ chainId: targetChainId });
+    } catch (e) {
+      console.error('Switch chain error:', e);
+    }
   };
+
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -105,8 +118,8 @@ export default function TopNav() {
                 </div>
               </Link>
               <nav className="hidden md:flex space-x-8">
-                <Link href="/discover" className="text-gray-300 hover:text-echo-primary transition-colors text-sm font-bold uppercase">{tSafe('nav.discover')}</Link>
-                <Link href="/community" className="text-gray-300 hover:text-echo-primary transition-colors text-sm font-bold uppercase">{tSafe('nav.community')}</Link>
+                <Link href="/discover" className="text-gray-300 hover:text-echo-primary transition-colors text-sm font-bold uppercase">{t('nav.discover')}</Link>
+                <Link href="/community" className="text-gray-300 hover:text-echo-primary transition-colors text-sm font-bold uppercase">{t('nav.community')}</Link>
               </nav>
             </div>
 
@@ -116,6 +129,48 @@ export default function TopNav() {
               <Link href="/search" className="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300 hover:text-white">
                 <Search className="w-5 h-5" />
               </Link>
+
+              {/* Network Switcher */}
+              <div 
+                className="relative"
+                onMouseEnter={() => setShowNetworkMenu(true)}
+                onMouseLeave={() => setShowNetworkMenu(false)}
+              >
+                <button 
+                  onClick={() => setShowNetworkMenu(!showNetworkMenu)}
+                  className="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300 hover:text-white flex items-center gap-1.5 cursor-pointer"
+                  title="Switch Network"
+                >
+                  <span className={`w-2 h-2 rounded-full ${chainId === 677 ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]'}`} />
+                  <span className="text-[10px] font-black uppercase tracking-wider">
+                    {chainId === 677 ? 'BOT Chain' : 'Base'}
+                  </span>
+                </button>
+                {showNetworkMenu && (
+                  <div className="absolute right-0 mt-1 w-32 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl transition-all duration-200 z-50">
+                    <button 
+                      onClick={() => {
+                        handleSwitchNetwork(84532);
+                        setShowNetworkMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 ${chainId !== 677 ? 'text-echo-primary bg-white/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      Base Sepolia
+                    </button>
+                    <button 
+                      onClick={() => {
+                        handleSwitchNetwork(677);
+                        setShowNetworkMenu(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 ${chainId === 677 ? 'text-echo-primary bg-white/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      BOT Chain
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Language Switcher */}
               <div 
@@ -128,7 +183,7 @@ export default function TopNav() {
                   className="p-2 rounded-full hover:bg-white/10 transition-colors text-gray-300 hover:text-white flex items-center gap-1 cursor-pointer"
                 >
                   <Globe className="w-4 h-4" />
-                  <span className="text-[10px] font-black uppercase tracking-wider">{isMounted ? language : 'zh'}</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider">{language}</span>
                 </button>
                 {showLangMenu && (
                   <div className="absolute right-0 mt-1 w-24 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl transition-all duration-200 z-50">
@@ -217,7 +272,7 @@ export default function TopNav() {
                   onClick={() => setIsAuthOpen(true)}
                   className="bg-white/10 hover:bg-white/20 text-white text-xs font-bold py-2 px-4 rounded-full transition-all border border-white/10"
                 >
-                  {tSafe('nav.login')}
+                  {t('nav.login')}
                 </button>
               )}
             </div>

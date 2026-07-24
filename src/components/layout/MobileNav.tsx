@@ -3,26 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePlayerStore } from '@/store/playerStore';
-import { useLanguageStore, translations } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 import { Play, Pause, Compass, Home, Users, User } from 'lucide-react';
-import { useState, useEffect } from 'react';
 
 export default function MobileNav() {
   const { isPlaying, togglePlay, showPlayer, togglePlayerPanel } = usePlayerStore();
-  const { t } = useLanguageStore();
-  const [isMounted, setIsMounted] = useState(false);
+  const { t } = useTranslation();
   const pathname = usePathname();
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const tSafe = (key: string) => {
-    if (!isMounted) {
-      return translations[key]?.zh || key;
-    }
-    return t(key);
-  };
 
   const handlePlayClick = () => {
     togglePlay();
@@ -32,10 +19,10 @@ export default function MobileNav() {
   };
 
   const navItems = [
-    { label: tSafe('nav.home'), icon: Home, path: '/' },
-    { label: tSafe('nav.discover'), icon: Compass, path: '/discover' },
-    { label: tSafe('nav.community'), icon: Users, path: '/community' },
-    { label: tSafe('nav.profile'), icon: User, path: '/profile' },
+    { label: t('nav.home'), icon: Home, path: '/' },
+    { label: t('nav.discover'), icon: Compass, path: '/discover' },
+    { label: t('nav.community'), icon: Users, path: '/community' },
+    { label: t('nav.profile'), icon: User, path: '/profile' },
   ];
 
   return (

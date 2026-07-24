@@ -22,12 +22,12 @@ import {
   Wallet2
 } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FALLBACK_SONGS } from '@/utils/mockData';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
 import { parseUnits, parseAbi } from 'viem';
-import { CONTRACT_ADDRESSES, EchoTokenABI } from '@/contracts/config';
+import { CONTRACT_ADDRESSES, EchoTokenABI, getContractAddresses } from '@/contracts/config';
 import { BUILDER_CODE_SUFFIX } from '@/utils/erc8021';
 
 
@@ -52,8 +52,10 @@ export default function MarketPage() {
     usedCredit 
   } = usePlayerStore();
   
-  const { t } = useLanguageStore();
+  const { t } = useTranslation();
   const supabase = createClient();
+  const chainId = useChainId();
+  const contractAddresses = getContractAddresses(chainId);
 
   // On-chain payment hooks
   const { address: connectedAddress, isConnected } = useAccount();
@@ -127,11 +129,11 @@ export default function MarketPage() {
         // A. 调用 EchoToken.transfer 将 ECHO 发送给平台 AdminAddress
         showPremiumToast('正在发起链上支付，请在钱包中确认...', 'success');
         const txHash = await writeContractAsync({
-          address: CONTRACT_ADDRESSES.EchoToken as `0x${string}`,
+          address: contractAddresses.EchoToken as `0x${string}`,
           abi: parseAbi(EchoTokenABI as any),
           functionName: 'transfer',
-          args: [CONTRACT_ADDRESSES.AdminAddress as `0x${string}`, parseUnits(cost.toString(), 18)],
-          dataSuffix: BUILDER_CODE_SUFFIX,
+          args: [contractAddresses.AdminAddress as `0x${string}`, parseUnits(cost.toString(), 18)],
+          dataSuffix: chainId === 677 ? undefined : BUILDER_CODE_SUFFIX,
         });
         setOnChainPayTxHash(txHash);
         showPremiumToast('支付交易已提交，正在等待链上确认...', 'success');
@@ -139,7 +141,12 @@ export default function MarketPage() {
         // B. 等待交易打包成功后，请求后端 API 验证交易并分发链上 ERC-1155 股权
         // 轮询等待链上确认 (最多 60 秒)
         const provider = await import('viem').then(({ createPublicClient, http }) =>
-          createPublicClient({ chain: { id: 84532, name: 'Base Sepolia', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: ['https://sepolia.base.org'] } } } as any, transport: http() })
+          createPublicClient({ 
+            chain: chainId === 677 
+              ? { id: 677, name: 'BOT Chain', nativeCurrency: { name: 'BOT', symbol: 'BOT', decimals: 18 }, rpcUrls: { default: { http: ['https://rpc.botchain.ai'] } } }
+              : { id: 84532, name: 'Base Sepolia', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: ['https://sepolia.base.org'] } } }, 
+            transport: http() 
+          } as any)
         );
 
         let receipt = null;
@@ -169,7 +176,8 @@ export default function MarketPage() {
             txHash,
             songId: selectedSong.id,
             shareAmount,
-            userAddress: connectedAddress
+            userAddress: connectedAddress,
+            chainId: chainId
           })
         });
         const purchaseResult = await purchaseRes.json();

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { MessageSquare, Users, TrendingUp, Send, ThumbsUp, Timer, CheckCircle2, Lock } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 
 export default function CommunityPage() {
   const [activeTab, setActiveTab] = useState<'assembly' | 'square' | 'market'>('assembly');
@@ -19,7 +19,7 @@ export default function CommunityPage() {
   const [expandedPosts, setExpandedPosts] = useState<Set<string>>(new Set());
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [isReplying, setIsReplying] = useState<Record<string, boolean>>({});
-  const { t } = useLanguageStore();
+  const { t } = useTranslation();
   const router = useRouter();
   const supabase = createClient();
 

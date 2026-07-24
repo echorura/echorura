@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { X, Mail, Lock, Loader2, Phone, KeyRound, UserPlus } from 'lucide-react';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ const getFriendlyErrorMessage = (err: any, defaultMsg: string) => {
 };
 
 export default function AuthModal({ isOpen, onClose, initialIsLogin = true }: AuthModalProps) {
-  const { t, language } = useLanguageStore();
+  const { t, language } = useTranslation();
   const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
   const [isLogin, setIsLogin] = useState(initialIsLogin);
   const [referrerPhone, setReferrerPhone] = useState('');

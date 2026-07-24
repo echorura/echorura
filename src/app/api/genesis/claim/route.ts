@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES } from '@/contracts/config';
+import { CONTRACT_ADDRESSES, getContractAddresses } from '@/contracts/config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Parse request body for user wallet address
     const body = await request.json();
-    const { walletAddress } = body;
+    const { walletAddress, chainId: reqChainId } = body;
 
     if (!walletAddress || !ethers.isAddress(walletAddress)) {
       return NextResponse.json({ error: '无效的钱包地址' }, { status: 400 });
@@ -62,12 +62,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Contract details
-    const contractAddress = CONTRACT_ADDRESSES.GenesisPassport;
-    // We get the chainId based on which network we are on
-    // For Base Sepolia: 84532. For Base Mainnet: 8453.
-    // We can infer chainId from environment or default to 84532 (Base Sepolia) for testing.
-    const isMainnet = process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_MEMFIRE_URL?.includes('sepolia');
-    const chainId = isMainnet ? 8453 : 84532; 
+    const chainId = reqChainId || 84532;
+    const contractAddresses = getContractAddresses(chainId);
+    const contractAddress = contractAddresses.GenesisPassport;
 
     // Construct message hash: keccak256(abi.encodePacked(userAddress, memberNumber, contractAddress, chainId))
     const msgHash = ethers.solidityPackedKeccak256(
@@ -79,7 +76,7 @@ export async function POST(request: NextRequest) {
     const signerWallet = new ethers.Wallet(privateKey);
     const signature = await signerWallet.signMessage(ethers.getBytes(msgHash));
 
-    console.log(`[Genesis Claim API] Signed claim for User ${user.id} | MemberNo ${memberNumber} | Wallet ${walletAddress}`);
+    console.log(`[Genesis Claim API] Signed claim for User ${user.id} | MemberNo ${memberNumber} | Wallet ${walletAddress} | Chain ${chainId}`);
 
     return NextResponse.json({
       success: true,

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES, MusicIPABI } from '@/contracts/config';
+import { CONTRACT_ADDRESSES, MusicIPABI, getContractAddresses } from '@/contracts/config';
 
 export async function POST(request: NextRequest) {
   try {
-    const { txHash, songId, shareAmount, userAddress } = await request.json();
+    const { txHash, songId, shareAmount, userAddress, chainId } = await request.json();
+    const contractAddresses = getContractAddresses(chainId);
 
     if (!txHash || !songId || !shareAmount || !userAddress) {
       return NextResponse.json({ error: '参数无效: 需提供 txHash, songId, shareAmount, userAddress' }, { status: 400 });
@@ -80,7 +81,8 @@ export async function POST(request: NextRequest) {
 
     // 3. 链上验证用户的支付交易
     try {
-      const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+      const rpcUrl = chainId === 677 ? 'https://rpc.botchain.ai' : 'https://sepolia.base.org';
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       const receipt = await provider.getTransactionReceipt(txHash);
 
       if (!receipt) {
@@ -97,14 +99,14 @@ export async function POST(request: NextRequest) {
 
       for (const log of receipt.logs) {
         if (
-          log.address.toLowerCase() === CONTRACT_ADDRESSES.EchoToken.toLowerCase() &&
+          log.address.toLowerCase() === contractAddresses.EchoToken.toLowerCase() &&
           log.topics[0] === transferTopic
         ) {
           const logFromAddress = '0x' + log.topics[1].slice(26).toLowerCase();
           const logToAddress = '0x' + log.topics[2].slice(26).toLowerCase();
           
           const expectedFromAddress = userAddress.toLowerCase();
-          const expectedToAddress = CONTRACT_ADDRESSES.AdminAddress.toLowerCase();
+          const expectedToAddress = contractAddresses.AdminAddress.toLowerCase();
           
           if (logFromAddress === expectedFromAddress && logToAddress === expectedToAddress) {
             const logValue = ethers.toBigInt(log.data);
@@ -151,10 +153,11 @@ export async function POST(request: NextRequest) {
 
     let shareTransferTxHash = '';
     try {
-      const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+      const rpcUrl = chainId === 677 ? 'https://rpc.botchain.ai' : 'https://sepolia.base.org';
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       const signer = new ethers.Wallet(distributorPrivateKey, provider);
       const musicIPContract = new ethers.Contract(
-        CONTRACT_ADDRESSES.MusicIP,
+        contractAddresses.MusicIP,
         MusicIPABI,
         signer
       );
@@ -164,20 +167,20 @@ export async function POST(request: NextRequest) {
       const onChainCreator = songInfoOnChain[0];
       
       if (onChainCreator === ethers.ZeroAddress) {
-        console.log(`[Web3 Backend] Initializing IPO on-chain for song ${songId}...`);
+        console.log(`[Web3 Backend] Initializing IPO on-chain for song ${songId} on chainId ${chainId}...`);
         const createIpoTx = await musicIPContract.createIPO(
           songId,
           song.total_shares || 100,
-          CONTRACT_ADDRESSES.AdminAddress
+          contractAddresses.AdminAddress
         );
         await createIpoTx.wait();
         console.log(`[Web3 Backend] IPO initialized on-chain successfully!`);
       }
 
       // B. 调用 safeTransferFrom 将 ERC-1155 歌曲股权代币从 AdminAddress 发送至用户钱包
-      console.log(`[Web3 Backend] Distributing ${shareAmount} shares of song ${songId} to ${userAddress}...`);
+      console.log(`[Web3 Backend] Distributing ${shareAmount} shares of song ${songId} to ${userAddress} on chainId ${chainId}...`);
       const transferTx = await musicIPContract.safeTransferFrom(
-        CONTRACT_ADDRESSES.AdminAddress,
+        contractAddresses.AdminAddress,
         userAddress,
         songId,
         shareAmount,
@@ -220,7 +223,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `🎉 认购成功！已在 Base Sepolia 链上分发 ${shareAmount} 份版权代币至您的智能钱包。`,
+      message: `🎉 认购成功！已在 ${chainId === 677 ? 'BOT Chain' : 'Base Sepolia'} 链上分发 ${shareAmount} 份版权代币至您的钱包。`,
       shareTransferTxHash
     });
 

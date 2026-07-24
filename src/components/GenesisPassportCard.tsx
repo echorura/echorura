@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useAccount, useReadContract, useWriteContract } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useChainId } from 'wagmi';
 import { parseAbi } from 'viem';
 import { createClient } from '@/utils/supabase/client';
-import { useLanguageStore } from '@/store/languageStore';
-import { CONTRACT_ADDRESSES, GenesisPassportABI } from '@/contracts/config';
+import { useTranslation } from '@/store/languageStore';
+import { CONTRACT_ADDRESSES, GenesisPassportABI, getContractAddresses } from '@/contracts/config';
 import { BUILDER_CODE_SUFFIX } from '@/utils/erc8021';
 import { GenerativeAudioEngine } from '@/utils/GenerativeAudioEngine';
 import { 
@@ -28,9 +28,11 @@ import {
 const audioEngine = new GenerativeAudioEngine();
 
 export default function GenesisPassportCard() {
-  const { language } = useLanguageStore();
+  const { language } = useTranslation();
   const { address: connectedAddress, isConnected } = useAccount();
   const supabase = createClient();
+  const chainId = useChainId();
+  const contractAddresses = getContractAddresses(chainId);
 
   // App & User state
   const [memberNumber, setMemberNumber] = useState<number | null>(null);
@@ -107,12 +109,12 @@ export default function GenesisPassportCard() {
 
   // Read contract to check if this member number has been minted
   const { data: isAlreadyMintedOnChain, refetch: refetchMintStatus } = useReadContract({
-    address: CONTRACT_ADDRESSES.GenesisPassport as `0x${string}`,
+    address: contractAddresses.GenesisPassport as `0x${string}`,
     abi: parseAbi(GenesisPassportABI as any),
     functionName: 'numberMinted',
     args: memberNumber ? [BigInt(memberNumber)] : undefined,
     query: {
-      enabled: !!memberNumber && CONTRACT_ADDRESSES.GenesisPassport !== '0x0000000000000000000000000000000000000000',
+      enabled: !!memberNumber && contractAddresses.GenesisPassport !== '0x0000000000000000000000000000000000000000',
     }
   });
 
@@ -151,7 +153,7 @@ export default function GenesisPassportCard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ walletAddress: connectedAddress })
+        body: JSON.stringify({ walletAddress: connectedAddress, chainId: chainId })
       });
 
       const resData = await response.json();
@@ -166,11 +168,11 @@ export default function GenesisPassportCard() {
         abi: parseAbi(GenesisPassportABI as any),
         functionName: 'claimPassport',
         args: [BigInt(signedNumber), signature],
-        dataSuffix: BUILDER_CODE_SUFFIX,
+        dataSuffix: chainId === 677 ? undefined : BUILDER_CODE_SUFFIX,
       });
 
       console.log('[Genesis Claim] Transaction sent, hash:', txHash);
-      alert('交易已提交至 Base 链上！请等待区块打包确认（约需几秒钟）...');
+      alert(chainId === 677 ? '交易已提交至 BOT Chain 链上！请等待区块打包确认（约需几秒钟）...' : '交易已提交至 Base 链上！请等待区块打包确认（约需几秒钟）...');
       
       setTimeout(async () => {
         await refetchMintStatus();
@@ -1064,16 +1066,16 @@ export default function GenesisPassportCard() {
           {!hasMinted ? (
             <button
               onClick={handleClaim}
-              disabled={isMinting || memberNumber === null || memberNumber <= 10 || CONTRACT_ADDRESSES.GenesisPassport === '0x0000000000000000000000000000000000000000'}
+              disabled={isMinting || memberNumber === null || memberNumber <= 10 || contractAddresses.GenesisPassport === '0x0000000000000000000000000000000000000000'}
               className={`flex-1 py-4 rounded-xl font-black text-sm transition-all shadow-xl flex items-center justify-center gap-2 cursor-pointer ${
                 isMinting ? 'bg-white/10 text-gray-500 border border-white/10 cursor-not-allowed'
                 : memberNumber !== null && memberNumber <= 10 ? 'bg-red-500/10 text-red-400 border border-red-500/20 cursor-not-allowed'
-                : CONTRACT_ADDRESSES.GenesisPassport === '0x0000000000000000000000000000000000000000' ? 'bg-white/5 text-gray-600 border border-white/5 cursor-not-allowed'
+                : contractAddresses.GenesisPassport === '0x0000000000000000000000000000000000000000' ? 'bg-white/5 text-gray-600 border border-white/5 cursor-not-allowed'
                 : 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(0,240,255,0.3)]'
               }`}
             >
               {isMinting ? <><Loader2 className="w-4 h-4 animate-spin"/>{t('claiming')}</>
-               : CONTRACT_ADDRESSES.GenesisPassport === '0x0000000000000000000000000000000000000000' ? <><ShieldAlert className="w-4 h-4"/>等待官方部署合约</>
+               : contractAddresses.GenesisPassport === '0x0000000000000000000000000000000000000000' ? <><ShieldAlert className="w-4 h-4"/>等待官方部署合约</>
                : memberNumber !== null && memberNumber <= 10 ? t('reserved')
                : <><Sparkles className="w-4 h-4"/>{t('claim')}</>}
             </button>

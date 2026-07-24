@@ -1,13 +1,47 @@
-// ECHORURA MUSICCHAIN Smart Contract Configuration
-// Deployed on Base Sepolia Testnet (100% Verified on Sourcify)
+import { defineChain } from 'viem';
 
-export const CONTRACT_ADDRESSES = {
-  EchoToken: '0x462a9C1FC3f69C8b663B9d365bb30e690D7f3094',
-  MiningPool: '0x6bB3b6D3f580Fe5cd680e96c78c1214B05B1E744',
-  MusicIP: '0xEDe38Ab93a9fD25E594a85819A50583b47F0a11e',
-  AdminAddress: '0x92F62F22fE34dAD6127862A87bCc57ECC8e23b11',
-  GenesisPassport: '0xC2eac0E1256386bC802E7a445D3BE7eA95E2b535', // Deployed on Base Sepolia
+export const botChain = defineChain({
+  id: 677,
+  name: 'BOT Chain',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'BOT',
+    symbol: 'BOT',
+  },
+  rpcUrls: {
+    default: { http: ['https://rpc.botchain.ai'] },
+  },
+  blockExplorers: {
+    default: { name: 'BOTScan', url: 'https://scan.botchain.ai' },
+  },
+});
+
+export const MULTI_CHAIN_CONTRACTS = {
+  84532: {
+    EchoToken: '0x462a9C1FC3f69C8b663B9d365bb30e690D7f3094',
+    MiningPool: '0x6bB3b6D3f580Fe5cd680e96c78c1214B05B1E744',
+    MusicIP: '0xEDe38Ab93a9fD25E594a85819A50583b47F0a11e',
+    GenesisPassport: '0xC2eac0E1256386bC802E7a445D3BE7eA95E2b535',
+    AdminAddress: '0x92F62F22fE34dAD6127862A87bCc57ECC8e23b11',
+  },
+  677: {
+    EchoToken: '0x1599A761688581E8Ec5e58A0080Db78d788D79d4',
+    MiningPool: '0x6bB3b6D3f580Fe5cd680e96c78c1214B05B1E744',
+    MusicIP: '0x77093Db72ddD968675475Eda0f7809042728A3dc',
+    GenesisPassport: '0xf2754636C5fE14c3fc079A68F485B2328c191eD5',
+    AdminAddress: '0x92F62F22fE34dAD6127862A87bCc57ECC8e23b11',
+  }
 };
+
+export const CONTRACT_ADDRESSES = MULTI_CHAIN_CONTRACTS[84532];
+
+export const getContractAddresses = (chainId: number | undefined) => {
+  if (chainId === 677) {
+    return MULTI_CHAIN_CONTRACTS[677];
+  }
+  return MULTI_CHAIN_CONTRACTS[84532];
+};
+
 
 export const BASE_SEPOLIA_CHAIN_INFO = {
   chainId: '0x14a34', // 84532 in hex

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES } from '@/contracts/config';
+import { CONTRACT_ADDRESSES, getContractAddresses } from '@/contracts/config';
 import { syncWalletDeposit } from '@/utils/supabase/sync';
 
 export async function POST(request: NextRequest) {
   try {
-    const { txHash, amount } = await request.json();
+    const { txHash, amount, chainId } = await request.json();
     
     if (!txHash || !amount || amount <= 0) {
       return NextResponse.json({ error: '参数无效: 需提供交易哈希和充值数量' }, { status: 400 });
@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
 
     // 2. 链上验证交易合法性 (在入账前执行验证，确保真实支付)
     try {
-      const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+      const rpcUrl = chainId === 677 ? 'https://rpc.botchain.ai' : 'https://sepolia.base.org';
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       const receipt = await provider.getTransactionReceipt(txHash);
 
       if (!receipt) {
@@ -42,17 +43,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: '该链上交易执行状态为失败' }, { status: 400 });
       }
 
+      const contractAddresses = getContractAddresses(chainId);
+
       // 解析 Transfer 日志并比对接收者与金额
       const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
       let transferFound = false;
 
       for (const log of receipt.logs) {
         if (
-          log.address.toLowerCase() === CONTRACT_ADDRESSES.EchoToken.toLowerCase() &&
+          log.address.toLowerCase() === contractAddresses.EchoToken.toLowerCase() &&
           log.topics[0] === transferTopic
         ) {
           const logToAddress = '0x' + log.topics[2].slice(26).toLowerCase();
-          const expectedToAddress = CONTRACT_ADDRESSES.AdminAddress.toLowerCase();
+          const expectedToAddress = contractAddresses.AdminAddress.toLowerCase();
 
           if (logToAddress === expectedToAddress) {
             const logValue = ethers.toBigInt(log.data);
@@ -69,6 +72,8 @@ export async function POST(request: NextRequest) {
       if (!transferFound) {
         return NextResponse.json({ error: '交易无效: 未在交易日志中检测到向平台管理员地址的转账，或数量不匹配' }, { status: 400 });
       }
+
+      console.log(`[Web3 Backend] verified deposit of ${amount} ECHO on chainId ${chainId}.`);
 
     } catch (web3Error: any) {
       console.error('Web3 verification error:', web3Error);

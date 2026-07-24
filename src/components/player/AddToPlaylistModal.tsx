@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { X, Plus, FolderHeart, Loader2, Music, Check } from 'lucide-react';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 
 interface Playlist {
   id: string;
@@ -19,7 +19,7 @@ interface AddToPlaylistModalProps {
 }
 
 export default function AddToPlaylistModal({ songId, songTitle, onClose }: AddToPlaylistModalProps) {
-  const { t } = useLanguageStore();
+  const { t } = useTranslation();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState<string | null>(null);

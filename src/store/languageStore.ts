@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -811,3 +812,24 @@ export const useLanguageStore = create<LanguageState>()(
     }
   )
 );
+
+export function useTranslation() {
+  const store = useLanguageStore();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  return {
+    t: (key: string) => {
+      if (!isMounted) {
+        return translations[key]?.zh || key;
+      }
+      return store.t(key);
+    },
+    language: isMounted ? store.language : 'zh',
+    setLanguage: store.setLanguage,
+    isMounted,
+  };
+}

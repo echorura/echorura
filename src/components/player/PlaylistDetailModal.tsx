@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { X, Play, Music, Share2, Copy, Check, Loader2, Trash2, Volume2, Plus } from 'lucide-react';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 import { usePlayerStore } from '@/store/playerStore';
 
 interface Track {
@@ -22,7 +22,7 @@ interface PlaylistDetailModalProps {
 }
 
 export default function PlaylistDetailModal({ playlistId, onClose }: PlaylistDetailModalProps) {
-  const { t } = useLanguageStore();
+  const { t } = useTranslation();
   const [playlist, setPlaylist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);

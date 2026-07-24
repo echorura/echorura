@@ -7,7 +7,7 @@ import TapSyncStudio from '@/components/studio/TapSyncStudio';
 import PlaylistDetailModal from '@/components/player/PlaylistDetailModal';
 import { usePlayerStore } from '@/store/playerStore';
 import { activeConfig } from '@/utils/compliance';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 import { useSearchParams } from 'next/navigation';
 import { 
   Upload, 
@@ -101,7 +101,7 @@ const compressImage = (file: File, maxWidth = 500, maxHeight = 500, quality = 0.
 
 
 function ProfileContent() {
-  const { t } = useLanguageStore();
+  const { t } = useTranslation();
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);

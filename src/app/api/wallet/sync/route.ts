@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES, MiningPoolABI } from '@/contracts/config';
+import { CONTRACT_ADDRESSES, MiningPoolABI, getContractAddresses } from '@/contracts/config';
 
 export async function POST(request: NextRequest) {
   try {
-    const { address: userAddress, amount } = await request.json();
+    const { address: userAddress, amount, chainId } = await request.json();
     
     if (!userAddress || !amount || amount <= 0) {
       return NextResponse.json({ error: '参数无效: 需提供有效的钱包地址和同步金额' }, { status: 400 });
@@ -75,11 +75,13 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+      const rpcUrl = chainId === 677 ? 'https://rpc.botchain.ai' : 'https://sepolia.base.org';
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
       const signer = new ethers.Wallet(distributorPrivateKey, provider);
       
+      const contractAddresses = getContractAddresses(chainId);
       const miningPoolContract = new ethers.Contract(
-        CONTRACT_ADDRESSES.MiningPool,
+        contractAddresses.MiningPool,
         MiningPoolABI,
         signer
       );
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
       const decimals = 18;
       const amountWei = ethers.parseUnits(amount.toString(), decimals);
 
-      console.log(`[Web3 Backend] Executing distributeReward(${userAddress}, ${amountWei.toString()})...`);
+      console.log(`[Web3 Backend] Executing distributeReward(${userAddress}, ${amountWei.toString()}) on chainId ${chainId}...`);
       const tx = await miningPoolContract.distributeReward(userAddress, amountWei);
       txHash = tx.hash;
 
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ 
         success: true, 
-        message: `🎉 同步成功！${amount} ECHO 已正式在 Base Sepolia 链上分发！`, 
+        message: `🎉 同步成功！${amount} ECHO 已正式在 ${chainId === 677 ? 'BOT Chain' : 'Base Sepolia'} 链上分发！`, 
         txHash,
         isMock: false,
         newBalance
@@ -117,7 +119,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: '本地扣减成功，但 Base Sepolia 链上请求拥堵。系统已自动加入分发重试队列。',
+        message: `本地扣减成功，但 ${chainId === 677 ? 'BOT Chain' : 'Base Sepolia'} 链上请求拥堵。系统已自动加入分发重试队列。`,
         txHash: fallbackHash,
         isMock: true,
         warning: contractError.message,

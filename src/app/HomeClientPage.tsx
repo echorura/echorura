@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { usePlayerStore } from '@/store/playerStore';
-import { useLanguageStore } from '@/store/languageStore';
+import { useTranslation } from '@/store/languageStore';
 import { Play, TrendingUp, Sparkles, Globe, Pause, Music2 } from 'lucide-react';
 import { fetchSongsResilient, fetchArenaRegistrationsResilient } from '@/utils/supabase/queries';
 
@@ -76,7 +76,7 @@ const SongRow = ({ song, index, currentTrack, isPlaying, onPlay, t }: any) => {
 
 export default function HomeClientPage() {
   const { setTrack, setPlaylist, currentTrack, isPlaying, togglePlay } = usePlayerStore();
-  const { t } = useLanguageStore();
+  const { t } = useTranslation();
   const [hotPlays, setHotPlays] = useState<any[]>([]);
   const [trendingDiscoveries, setTrendingDiscoveries] = useState<any[]>([]);
   const [newReleases, setNewReleases] = useState<any[]>([]);
