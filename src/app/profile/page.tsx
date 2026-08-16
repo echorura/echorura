@@ -544,29 +544,60 @@ function ProfileContent() {
     }
   }, [activeTab, user]);
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (data) {
-      setProfile(data);
-      setEditName(data.display_name || '');
-      setEditAvatar(data.avatar_url || '');
-      setEditBio(data.bio || '');
-    } else {
-      const initialName = user?.email?.split('@')[0] || user?.phone || 'ECHORURA_User';
-      const initialAvatar = PRESET_AVATARS[0];
-      const { data: newProfile } = await supabase.from('profiles').insert({
-        id: userId,
-        display_name: initialName,
-        avatar_url: initialAvatar
-      }).select().single();
-      if (newProfile) setProfile(newProfile);
-    }
-  };
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    const generateDefaultName = () => {
+      if (user?.email && user.email.includes('@')) {
+        const prefix = user.email.split('@')[0];
+        if (prefix && prefix.length > 0) return prefix;
+      }
+      if (user?.phone) {
+        const cleanPhone = user.phone.replace(/[^0-9]/g, '');
+        const last4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : cleanPhone;
+        return `创作者_${last4}`;
+      }
+      return `极声创作者_${userId.substring(0, 6)}`;
+    };
+
+    const hasValidName = data && data.display_name && data.display_name.trim() !== '' && data.display_name !== '匿名创作者';
+
+    if (hasValidName) {
+      setProfile(data);
+      setEditName(data.display_name);
+      setEditAvatar(data.avatar_url || PRESET_AVATARS[0]);
+      setEditBio(data.bio || '');
+    } else {
+      const defaultName = generateDefaultName();
+      const defaultAvatar = data?.avatar_url || PRESET_AVATARS[0];
+
+      console.log(`[Profile Engine] Initializing missing display_name to "${defaultName}" for user: ${userId}`);
+
+      const { data: updatedProfile } = await supabase.from('profiles').upsert({
+        id: userId,
+        display_name: defaultName,
+        avatar_url: defaultAvatar,
+        bio: data?.bio || '',
+        updated_at: new Date().toISOString()
+      }).select().single();
+
+      const activeProfile = updatedProfile || {
+        id: userId,
+        display_name: defaultName,
+        avatar_url: defaultAvatar,
+        bio: data?.bio || ''
+      };
+
+      setProfile(activeProfile);
+      setEditName(activeProfile.display_name);
+      setEditAvatar(activeProfile.avatar_url);
+      setEditBio(activeProfile.bio || '');
+    }
+  };
 
   const fetchMySongs = async (userId: string) => {
     const { data: songsData } = await supabase
