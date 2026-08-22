@@ -4199,8 +4199,8 @@ function ProfileContent() {
                       <text x="160" y="35" fill="#ffffff" fontSize="13" fontWeight="bold">扫码在线核验存证凭证</text>
                       <text x="160" y="55" fill="rgba(255,255,255,0.5)" fontSize="9.5">SCAN QR CODE FOR REAL-TIME ONLINE VERIFICATION</text>
                       
-                      <text x="160" y="85" fill="rgba(255,255,255,0.4)" fontSize="9">本凭证由极声音乐香港版提供技术确权与数字保全支持。</text>
-                      <text x="160" y="100" fill="rgba(255,255,255,0.4)" fontSize="9">基于物理音频特征指纹哈希与专有数字签名，具备防篡改性。</text>
+                      <text x="160" y="85" fill="rgba(255,255,255,0.4)" fontSize="9">{tSafe('verify.scan_qr_desc', '本凭证由极声音乐提供技术确权与数字保全支持。')}</text>
+                      <text x="160" y="100" fill="rgba(255,255,255,0.4)" fontSize="9">{tSafe('verify.scan_qr_desc2', '基于物理音频特征指纹哈希与专有数字签名，具备防篡改性。')}</text>
                     </g>
 
                     <text x="400" y="1030" textAnchor="middle" fill="rgba(255,255,255,0.2)" fontSize="8.5">ECHORURA MUSIC GROUP CO., LTD. • COPYRIGHT PRESERVATION CENTER</text>
@@ -4223,14 +4223,14 @@ function ProfileContent() {
 
                 <div className="space-y-4">
                   <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase">什么是音频指纹？</h4>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase">{tSafe('profile.certificate_what_is_fingerprint', '什么是音频指纹？')}</h4>
                     <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">
                       系统在您申领证书时，会通过声学指纹提取算法，对您上传的音频文件提取唯一的二进制 SHA-256 哈希值。该哈希值与您的创作者数字账户、存证时间一并被平台私钥进行数字加密签章。
                     </p>
                   </div>
 
                   <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase">数字确权地址</h4>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase">{tSafe('profile.certificate_owner_wallet', '数字确权地址')}</h4>
                     <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">
                       {metaMaskAddress 
                         ? '检测到您连接的 MetaMask 钱包，已使用您的自托管以太坊账户地址作为版权所有权人在证书上进行确权公示。' 
@@ -4246,7 +4246,7 @@ function ProfileContent() {
                   className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-echo-primary to-echo-secondary text-black font-black text-xs hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_20px_rgba(0,240,255,0.2)]"
                 >
                   <Download className="w-4 h-4" />
-                  保存证书至本地唱片卡 (PNG)
+                  {tSafe('profile.certificate_save_local', '保存证书至本地唱片卡 (PNG)')}
                 </button>
 
                 <button
@@ -4258,14 +4258,14 @@ function ProfileContent() {
                   className="w-full py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Share2 className="w-4 h-4" />
-                  复制存证核验分享链接
+                  {tSafe('profile.certificate_copy_link', '复制存证核验分享链接')}
                 </button>
 
                 <button
                   onClick={() => setIsCertificateModalOpen(false)}
                   className="w-full py-3.5 rounded-2xl bg-white/5 text-gray-400 font-bold text-xs hover:text-white transition-all cursor-pointer"
                 >
-                  返回我的作品集
+                  {tSafe('profile.certificate_return_works', '返回我的作品集')}
                 </button>
               </div>
             </div>
