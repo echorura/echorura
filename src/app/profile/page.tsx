@@ -10,7 +10,8 @@ import { activeConfig } from '@/utils/compliance';
 import { useTranslation } from '@/store/languageStore';
 import { useSearchParams } from 'next/navigation';
 import { 
-  Upload, 
+  Upload,
+  Download, 
   Music, 
   Image as ImageIcon, 
   DollarSign, 
@@ -188,7 +189,22 @@ const uploadFile = async (file: File, folder: string, accessToken: string): Prom
 
 function ProfileContent() {
   const { t } = useTranslation();
-  const [isMounted, setIsMounted] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [metaMaskAddress, setMetaMaskAddress] = useState<string>('');
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).ethereum) {
+      (window as any).ethereum.request({ method: 'eth_accounts' })
+        .then((accounts: string[]) => {
+          if (accounts && accounts[0]) {
+            setMetaMaskAddress(accounts[0]);
+          }
+        })
+        .catch((e: any) => console.error(e));
+    }
+  }, []);
+
+
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -397,8 +413,32 @@ function ProfileContent() {
   const [isIpoActive, setIsIpoActive] = useState(false);
   const [totalShares, setTotalShares] = useState(100);
   const [ipoPercentage, setIpoPercentage] = useState(50);
-  const [pushToFollowers, setPushToFollowers] = useState(true);
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [pushToFollowers, setPushToFollowers] = useState(true);
+  const [applyCertificate, setApplyCertificate] = useState(false);
+  const [selectedCertificateSong, setSelectedCertificateSong] = useState<any>(null);
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
+  const [isApplyingCertificateId, setIsApplyingCertificateId] = useState<number | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+
+  const [qrBase64, setQrBase64] = useState<string>('');
+  useEffect(() => {
+    if (selectedCertificateSong) {
+      const verifyUrl = `${window.location.origin}/verify/copyright?id=${selectedCertificateSong.certificate_id}`;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
+      fetch(qrUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setQrBase64(reader.result as string);
+          };
+          reader.readAsDataURL(blob);
+        })
+        .catch(err => console.error('Error fetching QR code:', err));
+    } else {
+      setQrBase64('');
+    }
+  }, [selectedCertificateSong]);
   
   // Audio Compression State
   const [compressionState, setCompressionState] = useState<{
@@ -631,6 +671,84 @@ function ProfileContent() {
     }
   };
 
+  const handleApplyCertificate = async (songId: number) => {
+    setIsApplyingCertificateId(songId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        alert('无法获取登录凭证，请重新登录后再试');
+        return;
+      }
+
+      const res = await fetch('/api/songs/certificate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ songId })
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || '证书申领失败');
+      }
+
+      // 更新列表状态
+      setMySongs(prevSongs => prevSongs.map(s => s.id === songId ? { ...s, ...result.data } : s));
+      
+      // 开启证书大图预览
+      const currentSong = mySongs.find(s => s.id === songId);
+      if (currentSong) {
+        const updatedSong = { ...currentSong, ...result.data };
+        setSelectedCertificateSong(updatedSong);
+        setIsCertificateModalOpen(true);
+      }
+      alert('🎉 存证证书生成成功！');
+    } catch (err: any) {
+      alert('申请证书失败: ' + err.message);
+    } finally {
+      setIsApplyingCertificateId(null);
+    }
+  };
+
+  const downloadCertificate = () => {
+    const svgElement = document.getElementById('copyright-certificate-svg');
+    if (!svgElement) {
+      alert('未找到证书文件，请重试');
+      return;
+    }
+
+    try {
+      const svgString = new XMLSerializer().serializeToString(svgElement);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const URL = window.URL || window.webkitURL || window;
+      const blobURL = URL.createObjectURL(svgBlob);
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 1695;
+        const context = canvas.getContext('2d');
+        if (context) {
+          context.fillStyle = '#050508';
+          context.fillRect(0, 0, 1200, 1695);
+          context.drawImage(image, 0, 0, 1200, 1695);
+          const png = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          downloadLink.href = png;
+          downloadLink.download = `ECHORURA_COPYRIGHT_CERT_${selectedCertificateSong?.title || 'WORK'}.png`;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+        }
+      };
+      image.src = blobURL;
+    } catch (err: any) {
+      console.error('Error rendering PNG:', err);
+      alert('导出图片发生错误，请使用网页截图或尝试重新打开：' + err.message);
+    }
+  };
+
   const fetchEditingSongArenaStatus = async (songId: any) => {
     setIsLoadingArenaStatus(true);
     setEditingSongArenaStatus('none');
@@ -1117,7 +1235,30 @@ function ProfileContent() {
         }
       } else {
         // 后端 record_mining_reward RPC 已记录 1.0 ECHO，此处不重复累加
-        alert('🎉 普通作品发布成功！已获得 1.00 ECHO 创作者激励 (待审计入账)。');
+        alert('🎉 普通作品发布成功！已获得 1.00 ECHO 创作者激励 (待审计入账)。');
+      }
+
+      // 自动申领版权存证证书
+      if (applyCertificate && dbData[0]?.id) {
+        try {
+          console.log('[Upload] 正在自动申请数字版权存证证书 for songId:', dbData[0].id);
+          const certRes = await fetch('/api/songs/certificate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ songId: dbData[0].id })
+          });
+          const certResult = await certRes.json();
+          if (certRes.ok && certResult.success) {
+            console.log('自动申领版权证书成功！', certResult.data);
+          } else {
+            console.error('自动申领版权证书失败:', certResult.error);
+          }
+        } catch (certErr) {
+          console.error('自动申领版权证书网络错误:', certErr);
+        }
       }
       
       setIsUploading(false);
@@ -2228,6 +2369,39 @@ function ProfileContent() {
                       <p className="text-xs text-gray-500 uppercase">{t('profile.plays_count')}</p>
                       <p className="text-white font-bold">{song.play_count ?? 0}</p>
                     </div>
+                    {/* 🛡️ 数字版权存证凭证按钮 */}
+                    {song.certificate_id ? (
+                      <button
+                        onClick={() => {
+                          setSelectedCertificateSong(song);
+                          setIsCertificateModalOpen(true);
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-echo-secondary/10 border border-echo-secondary/30 text-echo-secondary hover:bg-echo-secondary/20 transition-all flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                        title={tSafe('profile.view_certificate', '查看证书')}
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span className="hidden xs:inline">{tSafe('profile.view_certificate', '查看证书')}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleApplyCertificate(song.id)}
+                        disabled={isApplyingCertificateId === song.id}
+                        className="px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-echo-primary/50 transition-all flex items-center gap-1 text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        title={tSafe('profile.apply_certificate', '申请版权证书')}
+                      >
+                        {isApplyingCertificateId === song.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-echo-primary" />
+                        ) : (
+                          <Award className="w-3.5 h-3.5 text-echo-primary" />
+                        )}
+                        <span className="hidden xs:inline">
+                          {isApplyingCertificateId === song.id 
+                            ? '正在申请...' 
+                            : tSafe('profile.apply_certificate', '申请证书')}
+                        </span>
+                      </button>
+                    )}
+
                     {/* 📝 编辑展示元数据按钮 */}
                     <button 
                       onClick={() => {
@@ -3401,6 +3575,24 @@ function ProfileContent() {
                       </div>
                     )}
                     
+                    {/* Fan Push Switch */}
+                    <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl cursor-pointer mt-2" onClick={() => setApplyCertificate(!applyCertificate)}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${applyCertificate ? 'bg-echo-secondary/20 text-echo-secondary' : 'bg-gray-800 text-gray-500'}`}>
+                          <ShieldCheck className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-white">{tSafe('profile.upload_apply_certificate', '申请数字版权存证证书')}</h4>
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            {tSafe('profile.upload_apply_certificate_desc', '根据作品音频哈希与创作者账号，一键生成防伪存证证书。内测期间限时免费。')}
+                          </p>
+                        </div>
+                      </div>
+                      <div className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 ${applyCertificate ? 'bg-echo-secondary' : 'bg-white/10'}`}>
+                        <div className={`w-4 h-4 rounded-full bg-black transition-transform ${applyCertificate ? 'translate-x-6' : 'translate-x-0'}`} />
+                      </div>
+                    </div>
+
                     {/* Fan Push Switch */}
                     <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl cursor-pointer" onClick={() => setPushToFollowers(!pushToFollowers)}>
                       <div className="flex items-center gap-3">
@@ -3906,6 +4098,181 @@ function ProfileContent() {
         </div>
       )}
 
+      {/* Digital Copyright Certificate Modal */}
+      {isCertificateModalOpen && selectedCertificateSong && (
+        <div className="fixed top-[132px] bottom-0 left-0 right-0 z-[250] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setIsCertificateModalOpen(false)} />
+          
+          <div className="relative w-full max-w-5xl glass-panel rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl overflow-y-auto z-10 bg-[#0a0a0c]/85 max-h-full flex flex-col md:flex-row gap-8">
+            {/* Ambient Background Glow */}
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-echo-secondary/10 rounded-full blur-[120px] pointer-events-none"></div>
+            <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-echo-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+            {/* Left side: Certificate Preview Container */}
+            <div className="flex-1 flex flex-col items-center justify-center relative bg-black/40 rounded-2xl p-4 border border-white/5 overflow-hidden">
+              <div className="w-full overflow-x-auto flex justify-center py-2">
+                <div className="w-[380px] xs:w-[480px] sm:w-[600px] md:w-[450px] lg:w-[540px] shrink-0 aspect-[800/1130] bg-[#050508] rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-white/5 overflow-hidden">
+                  <svg
+                    id="copyright-certificate-svg"
+                    viewBox="0 0 800 1130"
+                    width="100%"
+                    height="100%"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ background: '#050508', fontFamily: 'monospace, sans-serif' }}
+                  >
+                    <defs>
+                      <linearGradient id="cyber-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#00f0ff" />
+                        <stop offset="100%" stopColor="#eb00ff" />
+                      </linearGradient>
+                      <linearGradient id="neon-glow" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="rgba(0, 240, 255, 0.2)" />
+                        <stop offset="100%" stopColor="rgba(235, 0, 255, 0.05)" />
+                      </linearGradient>
+                    </defs>
+
+                    <rect width="800" height="1130" fill="#050508" />
+                    
+                    <path d="M 0,100 L 800,100 M 0,200 L 800,200 M 0,300 L 800,300 M 0,400 L 800,400 M 0,500 L 800,500 M 0,600 L 800,600 M 0,700 L 800,700 M 0,800 L 800,800 M 0,900 L 800,900 M 0,1000 L 800,1000" stroke="rgba(255,255,255,0.015)" strokeWidth="1" />
+                    <path d="M 100,0 L 100,1130 M 200,0 L 200,1130 M 300,0 L 300,1130 M 400,0 L 400,1130 M 500,0 L 500,1130 M 600,0 L 600,1130 M 700,0 L 700,1130" stroke="rgba(255,255,255,0.015)" strokeWidth="1" />
+
+                    <path d="M 0,0 L 150,0 L 0,150 Z" fill="rgba(0, 240, 255, 0.03)" />
+                    <path d="M 800,1130 L 650,1130 L 800,980 Z" fill="rgba(235, 0, 255, 0.03)" />
+
+                    <rect x="25" y="25" width="750" height="1080" rx="20" fill="none" stroke="url(#cyber-grad)" strokeWidth="2.5" />
+                    <rect x="35" y="35" width="730" height="1060" rx="15" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                    <text x="400" y="90" textAnchor="middle" fill="url(#cyber-grad)" fontSize="15" fontWeight="bold" letterSpacing="4">ECHORURA SYSTEM DIGITAL ARCHIVE</text>
+                    <text x="400" y="130" textAnchor="middle" fill="#ffffff" fontSize="24" fontWeight="900" letterSpacing="2">数字版权存证凭证</text>
+                    <text x="400" y="155" textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="11" fontWeight="bold" letterSpacing="1">DIGITAL COPYRIGHT PRESERVATION CERTIFICATE</text>
+
+                    <line x1="100" y1="185" x2="700" y2="185" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+
+                    <circle cx="400" cy="300" r="80" fill="url(#neon-glow)" />
+
+                    <rect x="330" y="205" width="140" height="28" rx="6" fill="rgba(0, 240, 255, 0.1)" stroke="rgba(0, 240, 255, 0.3)" strokeWidth="1" />
+                    <text x="400" y="223" textAnchor="middle" fill="#00f0ff" fontSize="11" fontWeight="bold" letterSpacing="1">✓ STATE CUSTODY PASS</text>
+
+                    <text x="90" y="440" fill="rgba(255,255,255,0.4)" fontSize="12" fontWeight="bold">作品名称 / SONG TITLE</text>
+                    <text x="260" y="440" fill="#ffffff" fontSize="16" fontWeight="bold">{selectedCertificateSong.title}</text>
+                    <line x1="90" y1="455" x2="710" y2="455" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                    <text x="90" y="490" fill="rgba(255,255,255,0.4)" fontSize="12" fontWeight="bold">创作者 / ARTIST</text>
+                    <text x="260" y="490" fill="#ffffff" fontSize="15" fontWeight="bold">{selectedCertificateSong.artist}</text>
+                    <line x1="90" y1="505" x2="710" y2="505" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                    <text x="90" y="540" fill="rgba(255,255,255,0.4)" fontSize="12" fontWeight="bold">存证编号 / PRESERVATION ID</text>
+                    <text x="260" y="540" fill="#00f0ff" fontSize="14" fontWeight="bold" style={{ fontFamily: 'monospace' }}>{selectedCertificateSong.certificate_id}</text>
+                    <line x1="90" y1="555" x2="710" y2="555" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                    <text x="90" y="590" fill="rgba(255,255,255,0.4)" fontSize="12" fontWeight="bold">存证确权时间 / TIMESTAMP</text>
+                    <text x="260" y="590" fill="#ffffff" fontSize="14" style={{ fontFamily: 'monospace' }}>{selectedCertificateSong.certificate_created_at ? new Date(selectedCertificateSong.certificate_created_at).toLocaleString() : ''}</text>
+                    <line x1="90" y1="605" x2="710" y2="605" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                    <text x="90" y="640" fill="rgba(255,255,255,0.4)" fontSize="12" fontWeight="bold">音频指纹哈希 / AUDIO SHA-256</text>
+                    <text x="260" y="640" fill="rgba(255,255,255,0.8)" fontSize="10.5" style={{ fontFamily: 'monospace' }}>{selectedCertificateSong.audio_hash?.slice(0, 32)}</text>
+                    <text x="260" y="658" fill="rgba(255,255,255,0.8)" fontSize="10.5" style={{ fontFamily: 'monospace' }}>{selectedCertificateSong.audio_hash?.slice(32)}</text>
+                    <line x1="90" y1="675" x2="710" y2="675" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                    <text x="90" y="710" fill="rgba(255,255,255,0.4)" fontSize="12" fontWeight="bold">数字权益地址 / OWNER WALLET</text>
+                    <text x="260" y="710" fill="#eb00ff" fontSize="12" style={{ fontFamily: 'monospace' }}>{metaMaskAddress || (user ? `0x4337${user.id.slice(0, 4)}581e${user.id.slice(-4)}` : '')}</text>
+                    <text x="260" y="728" fill="rgba(255,255,255,0.3)" fontSize="8.5" style={{ fontFamily: 'monospace' }}>{metaMaskAddress ? 'CONNECTED METAMASK ADDRESS' : 'PLATFORM SILENT CUSTODIAL ACCOUNT (SCA)'}</text>
+                    <line x1="90" y1="745" x2="710" y2="745" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                    <text x="90" y="780" fill="rgba(255,255,255,0.4)" fontSize="12" fontWeight="bold">防伪数字签章 / PLATFORM SIGN</text>
+                    <text x="260" y="780" fill="rgba(255,255,255,0.8)" fontSize="9.5" style={{ fontFamily: 'monospace' }}>{selectedCertificateSong.signature_hash?.slice(0, 36)}</text>
+                    <text x="260" y="798" fill="rgba(255,255,255,0.8)" fontSize="9.5" style={{ fontFamily: 'monospace' }}>{selectedCertificateSong.signature_hash?.slice(36)}</text>
+                    <line x1="90" y1="815" x2="710" y2="815" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+
+                    <g transform="translate(90, 845)">
+                      {qrBase64 ? (
+                        <image href={qrBase64} x="0" y="0" width="130" height="130" />
+                      ) : (
+                        <rect width="130" height="130" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)" />
+                      )}
+                      <rect x="-5" y="-5" width="140" height="140" fill="none" stroke="rgba(0, 240, 255, 0.2)" strokeWidth="1" />
+                      <path d="M -5,15 L -5,-5 L 15,-5" fill="none" stroke="#00f0ff" strokeWidth="2" />
+                      <path d="M 120,-5 L 135,-5 L 135,15" fill="none" stroke="#00f0ff" strokeWidth="2" />
+                      <path d="M -5,120 L -5,135 L 15,135" fill="none" stroke="#00f0ff" strokeWidth="2" />
+                      <path d="M 120,135 L 135,135 L 135,120" fill="none" stroke="#00f0ff" strokeWidth="2" />
+
+                      <text x="160" y="35" fill="#ffffff" fontSize="13" fontWeight="bold">扫码在线核验存证凭证</text>
+                      <text x="160" y="55" fill="rgba(255,255,255,0.5)" fontSize="9.5">SCAN QR CODE FOR REAL-TIME ONLINE VERIFICATION</text>
+                      
+                      <text x="160" y="85" fill="rgba(255,255,255,0.4)" fontSize="9">本凭证由极声音乐香港版提供技术确权与数字保全支持。</text>
+                      <text x="160" y="100" fill="rgba(255,255,255,0.4)" fontSize="9">基于物理音频特征指纹哈希与专有数字签名，具备防篡改性。</text>
+                    </g>
+
+                    <text x="400" y="1030" textAnchor="middle" fill="rgba(255,255,255,0.2)" fontSize="8.5">ECHORURA MUSIC GROUP CO., LTD. • COPYRIGHT PRESERVATION CENTER</text>
+                    <text x="400" y="1045" textAnchor="middle" fill="rgba(255,255,255,0.15)" fontSize="7.5">All metadata rights are secured by decentralized cryptographic algorithms in cooperation with local nodes.</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Right side: Information & Actions */}
+            <div className="md:w-80 shrink-0 flex flex-col justify-between z-10">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
+                    <ShieldCheck className="w-6 h-6 text-echo-secondary" />
+                    {tSafe('profile.copyright_certificate', '版权存证证书')}
+                  </h3>
+                  <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">Digital Protection Shield</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase">什么是音频指纹？</h4>
+                    <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">
+                      系统在您申领证书时，会通过声学指纹提取算法，对您上传的音频文件提取唯一的二进制 SHA-256 哈希值。该哈希值与您的创作者数字账户、存证时间一并被平台私钥进行数字加密签章。
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase">数字确权地址</h4>
+                    <p className="text-[10px] text-gray-500 mt-2 leading-relaxed">
+                      {metaMaskAddress 
+                        ? '检测到您连接的 MetaMask 钱包，已使用您的自托管以太坊账户地址作为版权所有权人在证书上进行确权公示。' 
+                        : '检测到您尚未连接钱包，平台已自动使用为您分配的智能合约托管账号 (SCA) 地址作为您的区块链版权存证确权人。'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-6 md:pt-0">
+                <button
+                  onClick={downloadCertificate}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-echo-primary to-echo-secondary text-black font-black text-xs hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_20px_rgba(0,240,255,0.2)]"
+                >
+                  <Download className="w-4 h-4" />
+                  保存证书至本地唱片卡 (PNG)
+                </button>
+
+                <button
+                  onClick={() => {
+                    const verifyUrl = `${window.location.origin}/verify/copyright?id=${selectedCertificateSong.certificate_id}`;
+                    navigator.clipboard.writeText(verifyUrl);
+                    alert('📋 公开核验链接已复制到剪贴板！任何人都可以访问此链接查验证书真实性。');
+                  }}
+                  className="w-full py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4" />
+                  复制存证核验分享链接
+                </button>
+
+                <button
+                  onClick={() => setIsCertificateModalOpen(false)}
+                  className="w-full py-3.5 rounded-2xl bg-white/5 text-gray-400 font-bold text-xs hover:text-white transition-all cursor-pointer"
+                >
+                  返回我的作品集
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FAQ / Help Center Modal */}
       {isHelpModalOpen && (
         <div className="fixed top-[132px] bottom-0 left-0 right-0 z-[250] flex items-center justify-center p-4">
